@@ -22655,13 +22655,13 @@ ${prefix}${command} 1a0b5879-bc22-4f4a
           if (!isOwner) return reply("Este comando é apenas para o meu dono");
 
           const defaultDesign = {
-            header: `╭┈⊰ 🌸 『 *{botName}* 』\n┊Olá, {userName}!\n╰─┈┈┈┈┈◜❁◞┈┈┈┈┈─╯`,
-            menuTopBorder: "╭┈",
-            bottomBorder: "╰─┈┈┈┈┈◜❁◞┈┈┈┈┈─╯",
+            header: `╔══════════════════════════════════════════════╗\n║              🤖 {botName}              ║\n║              Olá, {userName}!              ║\n╚══════════════════════════════════════════════╝`,
+            menuTopBorder: "╭──────────────────────────────────────────────╮",
+            bottomBorder: "╰──────────────────────────────────────────────╯",
             menuTitleIcon: "🍧ฺꕸ▸",
             menuItemIcon: "•.̇𖥨֗🍓⭟",
             separatorIcon: "❁",
-            middleBorder: "┊"
+            middleBorder: "│"
           };
 
           if (saveMenuDesign(defaultDesign)) {

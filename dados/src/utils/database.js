@@ -117,12 +117,12 @@ ensureJsonFileExists(DONO_DIVULGACAO_FILE, {
 });
 ensureJsonFileExists(MENU_DESIGN_FILE, {
   header: `╭┈⊰ 🌸 『 *{botName}* 』\n┊Olá, {userName}!\n╰─┈┈┈┈┈◜❁◞┈┈┈┈┈─╯`,
-  menuTopBorder: "╭┈",
-  bottomBorder: "╰─┈┈┈┈┈◜❁◞┈┈┈┈┈─╯",
+  menuTopBorder: "╭──────────────────────────────────────────────╮",
+  bottomBorder: "╰──────────────────────────────────────────────╯",
   menuTitleIcon: "🍧ฺꕸ▸",
   menuItemIcon: "•.̇𖥨֗🍓⭟",
   separatorIcon: "❁",
-  middleBorder: "┊"
+  middleBorder: "│"
 });
 ensureJsonFileExists(ECONOMY_FILE, {
   users: {},
@@ -2785,24 +2785,24 @@ const loadMenuDesign = () => {
     } else {
       return {
         header: `╭┈⊰ 🌸 『 *{botName}* 』\n┊Olá, {userName}!\n╰─┈┈┈┈┈◜❁◞┈┈┈┈┈─╯`,
-        menuTopBorder: "╭┈",
-        bottomBorder: "╰─┈┈┈┈┈◜❁◞┈┈┈┈┈─╯",
+        menuTopBorder: "╭──────────────────────────────────────────────╮",
+        bottomBorder: "╰──────────────────────────────────────────────╯",
         menuTitleIcon: "🍧ฺꕸ▸",
         menuItemIcon: "•.̇𖥨֗🍓⭟",
         separatorIcon: "❁",
-        middleBorder: "┊"
+        middleBorder: "│"
       };
     }
   } catch (error) {
     console.error(`❌ Erro ao carregar design do menu: ${error.message}`);
     return {
       header: `╭┈⊰ 🌸 『 *{botName}* 』\n┊Olá, {userName}!\n╰─┈┈┈┈┈◜❁◞┈┈┈┈┈─╯`,
-      menuTopBorder: "╭┈",
-      bottomBorder: "╰─┈┈┈┈┈◜❁◞┈┈┈┈┈─╯",
+      menuTopBorder: "╭──────────────────────────────────────────────╮",
+      bottomBorder: "╰──────────────────────────────────────────────╯",
       menuTitleIcon: "🍧ฺꕸ▸",
       menuItemIcon: "•.̇𖥨֗🍓⭟",
       separatorIcon: "❁",
-      middleBorder: "┊"
+      middleBorder: "│"
     };
   }
 };
