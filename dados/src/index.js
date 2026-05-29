@@ -7520,10 +7520,14 @@ if (isCmd && command && !isOwner) {
             const level = me.level || 1;
             const nextLevelXp = 100 * Math.pow(1.5, level - 1);
             let leveledUp = false;
-            while (me.exp >= nextLevelXp) {
+            while (me.exp >= nextLevelXp && me.level < 100) {
               me.exp -= nextLevelXp;
               me.level += 1;
               leveledUp = true;
+            }
+            if (me.level >= 100) {
+              me.level = 100;
+              me.exp = 0;
             }
 
             saveEconomy(econ);
@@ -8710,12 +8714,15 @@ if (isCmd && command && !isOwner) {
           let leveledUp = false;
           let levelsGained = 0;
 
-          while (me.exp >= nextLevelXp) {
+          while (me.exp >= nextLevelXp && me.level < 100) {
             me.exp -= nextLevelXp;
             me.level++;
             levelsGained++;
             leveledUp = true;
-            if (me.level > 100) break; // Safety cap
+          }
+          if (me.level >= 100) {
+            me.level = 100;
+            me.exp = 0;
           }
 
           // Atualiza missão de dungeon
@@ -8993,10 +9000,14 @@ if (isCmd && command && !isOwner) {
           const nextLevelXp = 100 * Math.pow(1.5, me.level - 1);
           let leveledUp = false;
 
-          if (me.exp >= nextLevelXp) {
+          if (me.exp >= nextLevelXp && me.level < 100) {
             me.exp -= nextLevelXp;
             me.level++;
             leveledUp = true;
+          }
+          if (me.level >= 100) {
+            me.level = 100;
+            me.exp = 0;
           }
 
           // Atualiza missão de duelo

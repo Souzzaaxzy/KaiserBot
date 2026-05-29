@@ -2148,10 +2148,13 @@ function addSkillXP(user, skill, amount = 1) {
   const sk = user.skills[skill];
   sk.xp += Math.max(0, Math.floor(amount));
   let leveled = 0;
-  while (sk.xp >= skillXpForNext(sk.level)) {
+  while (sk.xp >= skillXpForNext(sk.level) && sk.level < 100) {
     sk.xp -= skillXpForNext(sk.level);
     sk.level += 1; leveled++;
-    if (sk.level > 1000) break; // hard cap
+  }
+  if (sk.level >= 100) {
+    sk.level = 100;
+    sk.xp = 0;
   }
   return leveled;
 }
