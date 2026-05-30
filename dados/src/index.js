@@ -3842,6 +3842,14 @@ packname: `${nomebot}`,            type: isVideo ? 'video' : 'image',
     let quotedMessageContent = null;
     if (type === 'extendedTextMessage' && info.message?.extendedTextMessage?.contextInfo?.quotedMessage) {
       quotedMessageContent = info.message.extendedTextMessage.contextInfo.quotedMessage;
+    } else if (info.message?.audioMessage?.contextInfo?.quotedMessage) {
+      quotedMessageContent = info.message.audioMessage.contextInfo.quotedMessage;
+    } else if (info.message?.imageMessage?.contextInfo?.quotedMessage) {
+      quotedMessageContent = info.message.imageMessage.contextInfo.quotedMessage;
+    } else if (info.message?.videoMessage?.contextInfo?.quotedMessage) {
+      quotedMessageContent = info.message.videoMessage.contextInfo.quotedMessage;
+    } else if (info.message?.stickerMessage?.contextInfo?.quotedMessage) {
+      quotedMessageContent = info.message.stickerMessage.contextInfo.quotedMessage;
     }
     const isQuotedMsg = !!quotedMessageContent?.conversation;
     const isQuotedMsg2 = !!quotedMessageContent?.extendedTextMessage?.text;
