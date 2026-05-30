@@ -32892,38 +32892,14 @@ ${prefix}wl.add @usuario | antilink,antistatus`);
           
           const momentToMark = moments[momentIndex];
           
-          // Responder citando a mensagem original
+          // Citar apenas a mensagem original, sem enviar texto
           if (momentToMark.sender) {
-            let responseText = '';
-            
-            if (momentToMark.type === 'text') {
-              responseText = momentToMark.content.substring(0, 100);
-            } else if (momentToMark.type === 'image') {
-              responseText = `📷 Foto${momentToMark.caption ? `\n${momentToMark.caption.substring(0, 100)}` : ''}`;
-            } else if (momentToMark.type === 'video') {
-              responseText = `🎥 Vídeo${momentToMark.caption ? `\n${momentToMark.caption.substring(0, 100)}` : ''}`;
-            } else if (momentToMark.type === 'audio') {
-              responseText = `🎵 Áudio`;
-            } else if (momentToMark.type === 'sticker') {
-              responseText = `🎭 Sticker`;
-            }
-            
-            // Responder citando a mensagem original do usuário
-            await nazu.sendMessage(from, {
-              text: responseText,
-              mentions: [momentToMark.sender]
-            }, {
-              quoted: {
-                key: {
-                  remoteJid: from,
-                  fromMe: momentToMark.originalFromMe || false,
-                  id: momentToMark.originalMessageId
-                },
-                message: {
-                  extendedTextMessage: {
-                    text: momentToMark.content || responseText
-                  }
-                }
+            // Responder com reação ao invés de texto
+            await nazu.react('👍', {
+              key: {
+                remoteJid: from,
+                fromMe: false,
+                id: momentToMark.originalMessageId
               }
             });
           } else {
