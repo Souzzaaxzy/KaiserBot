@@ -32881,7 +32881,7 @@ ${prefix}wl.add @usuario | antilink,antistatus`);
           if (!isGroup) return reply('🚫 Este comando só funciona em grupos!');
           if (!q) return reply(`📄 Como usar:\n\n${groupPrefix}m[número]\n\nExemplo: ${groupPrefix}m1`);
 
-          const momentIndex = parseInt(q) - 1;
+          const momentIndex = parseInt(q.trim()) - 1;
           const moments = getMoments(from);
           
           if (momentIndex < 0 || momentIndex >= moments.length) {
@@ -32890,24 +32890,27 @@ ${prefix}wl.add @usuario | antilink,antistatus`);
           
           const momentToMark = moments[momentIndex];
           
-          // Citar a mensagem original
+          // Marcar o usuário de verdade com menção
           if (momentToMark.sender) {
-            const senderMention = `@${momentToMark.sender.split('@')[0]}`;
-            let citationText = `> ${senderMention}\n`;
+            let mentionedJid = [momentToMark.sender];
+            let citationText = `@${momentToMark.senderName}\n\n`;
             
             if (momentToMark.type === 'text') {
-              citationText += `> ${momentToMark.content.substring(0, 100)}`;
+              citationText += `📝 ${momentToMark.content.substring(0, 100)}`;
             } else if (momentToMark.type === 'image') {
-              citationText += `> 📷 Foto${momentToMark.caption ? `\n> ${momentToMark.caption.substring(0, 100)}` : ''}`;
+              citationText += `📷 Foto${momentToMark.caption ? `\n${momentToMark.caption.substring(0, 100)}` : ''}`;
             } else if (momentToMark.type === 'video') {
-              citationText += `> 🎥 Vídeo${momentToMark.caption ? `\n> ${momentToMark.caption.substring(0, 100)}` : ''}`;
+              citationText += `🎥 Vídeo${momentToMark.caption ? `\n${momentToMark.caption.substring(0, 100)}` : ''}`;
             } else if (momentToMark.type === 'audio') {
-              citationText += `> 🎵 Áudio`;
+              citationText += `🎵 Áudio`;
             } else if (momentToMark.type === 'sticker') {
-              citationText += `> 🎭 Sticker`;
+              citationText += `🎭 Sticker`;
             }
             
-            await reply(citationText);
+            await nazu.sendMessage(from, {
+              text: citationText,
+              mentions: mentionedJid
+            });
           } else {
             await reply('❌ Não foi possível recuperar a mensagem original!');
           }
