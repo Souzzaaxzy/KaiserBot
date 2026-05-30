@@ -248,7 +248,8 @@ import {
   // Sistema de Ler Mais do Menu
   isMenuLerMaisEnabled,
   setMenuLerMais,
-  getMenuLerMaisText
+  getMenuLerMaisText,
+  calculateCombatStats,
 } from './utils/database.js';
 import { parseCustomCommandMeta, buildUsageFromParams, parseArgsFromString, escapeRegExp, validateParamValue } from './utils/helpers.js';
 import {
