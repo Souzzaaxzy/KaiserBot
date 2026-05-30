@@ -32738,7 +32738,9 @@ ${prefix}wl.add @usuario | antilink,antistatus`);
             requester: requesterJid,
             requesterName: requesterName,
             content: null,
-            caption: null
+            caption: null,
+            originalMessageKey: info.message.extendedTextMessage?.contextInfo?.stanzaId || null,
+            originalMessageId: info.message.extendedTextMessage?.contextInfo?.id || null
           };
 
           // Extrair conteúdo da mensagem respondida
@@ -32812,29 +32814,25 @@ ${prefix}wl.add @usuario | antilink,antistatus`);
 
           for (let i = 0; i < moments.length; i++) {
             const m = moments[i];
-            const time = new Date(m.savedAt).toLocaleTimeString('pt-BR');
             const senderMention = m.sender ? `@${m.sender.split('@')[0]}` : 'Desconhecido';
             const requesterMention = m.requester ? `@${m.requester.split('@')[0]}` : 'Desconhecido';
-            responseText += `${i + 1}. 👤 Enviado por: ${senderMention} (${m.senderName})\n`;
-            responseText += `   📄 Salvo por: ${requesterMention} (${m.requesterName || 'Desconhecido'})\n`;
-            responseText += `   🕒 ${time}\n`;
+            
+            responseText += `${i + 1}❤️ *${senderMention}*\n`;
             
             if (m.type === 'text') {
-              responseText += `   📝 ${m.content.substring(0, 50)}${m.content.length > 50 ? '...' : ''}\n`;
-              responseText += `   📄 Usar: ${groupPrefix}apm ${i + 1}\n\n`;
+              responseText += `📝 ${m.content.substring(0, 60)}${m.content.length > 60 ? '...' : ''}\n`;
             } else if (m.type === 'image') {
-              responseText += `   🖼️ Foto${m.caption ? ` - ${m.caption.substring(0, 30)}` : ''}\n`;
-              responseText += `   📄 Usar: ${groupPrefix}apm ${i + 1}\n\n`;
+              responseText += `📷 Foto${m.caption ? `\n${m.caption.substring(0, 60)}${m.caption.length > 60 ? '...' : ''}` : ''}\n`;
             } else if (m.type === 'video') {
-              responseText += `   🎥 Vídeo${m.caption ? ` - ${m.caption.substring(0, 30)}` : ''}\n`;
-              responseText += `   📄 Usar: ${groupPrefix}apm ${i + 1}\n\n`;
+              responseText += `🎥 Vídeo${m.caption ? `\n${m.caption.substring(0, 60)}${m.caption.length > 60 ? '...' : ''}` : ''}\n`;
             } else if (m.type === 'audio') {
-              responseText += `   🎵 Áudio\n`;
-              responseText += `   📄 Usar: ${groupPrefix}apm ${i + 1}\n\n`;
+              responseText += `🎵 Áudio\n`;
             } else if (m.type === 'sticker') {
-              responseText += `   🎭 Sticker\n`;
-              responseText += `   📄 Usar: ${groupPrefix}apm ${i + 1}\n\n`;
+              responseText += `🎭 Sticker\n`;
             }
+            
+            responseText += `👤 Salvo por: ${requesterMention}\n`;
+            responseText += `➡️ Use: ${groupPrefix}m${i + 1}\n\n`;
           }
 
           responseText += `\n📌 Limite: ${moments.length}/10 momentos por dia\n🚮 Para apagar um momento, use ${groupPrefix}apm [número]`;
@@ -32875,6 +32873,47 @@ ${prefix}wl.add @usuario | antilink,antistatus`);
         } catch (e) {
           console.error('Erro no comando apm:', e);
           await reply('❌ Ocorreu um erro ao apagar o momento 💔');
+        }
+        break;
+
+      case 'm':
+        try {
+          if (!isGroup) return reply('🚫 Este comando só funciona em grupos!');
+          if (!q) return reply(`📄 Como usar:\n\n${groupPrefix}m[número]\n\nExemplo: ${groupPrefix}m1`);
+
+          const momentIndex = parseInt(q) - 1;
+          const moments = getMoments(from);
+          
+          if (momentIndex < 0 || momentIndex >= moments.length) {
+            return reply('❌ Número de momento inválido!');
+          }
+          
+          const momentToMark = moments[momentIndex];
+          
+          // Citar a mensagem original
+          if (momentToMark.sender) {
+            const senderMention = `@${momentToMark.sender.split('@')[0]}`;
+            let citationText = `> ${senderMention}\n`;
+            
+            if (momentToMark.type === 'text') {
+              citationText += `> ${momentToMark.content.substring(0, 100)}`;
+            } else if (momentToMark.type === 'image') {
+              citationText += `> 📷 Foto${momentToMark.caption ? `\n> ${momentToMark.caption.substring(0, 100)}` : ''}`;
+            } else if (momentToMark.type === 'video') {
+              citationText += `> 🎥 Vídeo${momentToMark.caption ? `\n> ${momentToMark.caption.substring(0, 100)}` : ''}`;
+            } else if (momentToMark.type === 'audio') {
+              citationText += `> 🎵 Áudio`;
+            } else if (momentToMark.type === 'sticker') {
+              citationText += `> 🎭 Sticker`;
+            }
+            
+            await reply(citationText);
+          } else {
+            await reply('❌ Não foi possível recuperar a mensagem original!');
+          }
+        } catch (e) {
+          console.error('Erro no comando m:', e);
+          await reply('❌ Ocorreu um erro ao marcar o momento 💔');
         }
         break;
 
