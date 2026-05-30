@@ -30905,6 +30905,7 @@ ${nivelSorte >= 70 ? '🎉 Hoje é seu dia de sorte!' : nivelSorte >= 40 ? '🤔
           const target = sender;
           const targetId = getUserName(target);
           const targetName = `@${targetId}`;
+
           const levels = {
             puta: Math.floor(Math.random() * 101),
             gado: Math.floor(Math.random() * 101),
@@ -30913,41 +30914,125 @@ ${nivelSorte >= 70 ? '🎉 Hoje é seu dia de sorte!' : nivelSorte >= 40 ? '🤔
             carisma: Math.floor(Math.random() * 101),
             rico: Math.floor(Math.random() * 101),
             gostosa: Math.floor(Math.random() * 101),
-            feio: Math.floor(Math.random() * 101)
+            feio: Math.floor(Math.random() * 101),
+            iq: Math.floor(Math.random() * 101),
+            frieza: Math.floor(Math.random() * 101)
           };
-          const pacoteValue = `R$ ${(Math.random() * 10000 + 1).toFixed(2).replace('.', ',')}`;
-          const humors = ['😎 Tranquilão', '🔥 No fogo', '😴 Sonolento', '🤓 Nerd mode', '😜 Loucura total', '🧘 Zen'];
-          const randomHumor = humors[Math.floor(Math.random() * humors.length)];
-          let profilePic = 'https://raw.githubusercontent.com/nazuninha/uploads/main/outros/1747053564257_bzswae.bin';
+
+          const pacoteValue = `R$ ${(Math.random() * 10000 + 1)
+            .toFixed(2)
+            .replace('.', ',')}`;
+
+          const humors = [
+            '😎 Tranquilão',
+            '🔥 No fogo',
+            '😴 Sonolento',
+            '🤓 Nerd mode',
+            '😜 Loucura total',
+            '🧘 Zen'
+          ];
+
+          const randomHumor =
+            humors[Math.floor(Math.random() * humors.length)];
+
+          let profilePic;
+
           try {
             profilePic = await nazu.profilePictureUrl(target, 'image');
           } catch (error) {
-            console.warn(`Falha ao obter foto do perfil de ${targetName}:`, error.message);
+            console.warn(
+              `Falha ao obter foto do perfil de ${targetName}:`,
+              error.message
+            );
+            profilePic =
+              'https://i.imgur.com/6QZ6W63.jpeg';
           }
+
+          // BIO
           let bio = 'Sem bio disponível';
-          let bioSetAt = '';
+
           try {
             const statusData = await nazu.fetchStatus(target);
-            const status = statusData?.[0]?.status;
-            if (status) {
-              bio = status.status || bio;
-              bioSetAt = new Date(status.setAt).toLocaleString('pt-BR', {
-                dateStyle: 'short',
-                timeStyle: 'short',
-                timeZone: 'America/Sao_Paulo'
-              });
+            if (statusData?.status) {
+              bio = statusData.status || bio;
             }
           } catch (error) {
-            console.warn(`Falha ao obter status/bio de ${targetName}:`, error.message);
+            console.warn(
+              `Falha ao obter status/bio de ${targetName}:`,
+              error.message
+            );
           }
-          const perfilText = `📋 Perfil de ${targetName} 📋\n\n👤 *Nome*: ${pushname || 'Desconhecido'}\n📱 *Número*: ${targetId}\n📜 *Bio*: ${bio}${bioSetAt ? `\n🕒 *Bio atualizada em*: ${bioSetAt}` : ''}\n💰 *Valor do Pacote*: ${pacoteValue} 🫦\n😸 *Humor*: ${randomHumor}\n\n🎭 *Níveis*:\n  • Puta: ${levels.puta}%\n  • Gado: ${levels.gado}%\n  • Corno: ${levels.corno}%\n  • Sortudo: ${levels.sortudo}%\n  • Carisma: ${levels.carisma}%\n  • Rico: ${levels.rico}%\n  • Gostosa: ${levels.gostosa}%\n  • Feio: ${levels.feio}%`.trim();
 
-          await nazu.sendMessage(from, { image: { url: profilePic }, caption: perfilText, mentions: [target] }, { quoted: info });
+          // Relação (dados reais)
+          let relacao = 'Solteiro(a)';
+          try {
+            const activePair = relationshipManager.getActivePairForUser(sender);
+            if (activePair) {
+              relacao = activePair.status || 'Solteiro(a)';
+            }
+          } catch (error) {
+            console.warn('Erro ao obter relacionamento:', error.message);
+          }
+
+          // Cargo (dados reais)
+          let cargo = 'Membro';
+          try {
+            if (isOwner) {
+              cargo = 'Dono';
+            } else if (isGroupAdmin) {
+              cargo = 'Admin';
+            } else if (isModerator) {
+              cargo = 'Moderador';
+            }
+          } catch (error) {
+            console.warn('Erro ao obter cargo:', error.message);
+          }
+
+          const perfilText = `╔═〔 📋 PERFIL 〕═╗
+
+👤 ${targetName}
+📱 ${targetId}
+📝 "${bio}"
+
+💰 Pacote » ${pacoteValue}
+😼 Humor » ${randomHumor}
+
+🎭 STATUS
+
+😈 Puta » ${levels.puta}%
+🐂 Gado » ${levels.gado}%
+🤡 Corno » ${levels.corno}%
+🍀 Sorte » ${levels.sortudo}%
+😎 Carisma » ${levels.carisma}%
+💸 Rico » ${levels.rico}%
+💋 Gostosa » ${levels.gostosa}%
+👹 Feio » ${levels.feio}%
+🧠 IQ » ${levels.iq}%
+🗿 Frieza » ${levels.frieza}%
+
+💞 Relação » ${relacao}
+🎖️ Cargo » ${cargo}
+
+╚══════════════╝`;
+
+          await nazu.sendMessage(
+            from,
+            {
+              image: { url: profilePic },
+              caption: perfilText,
+              mentions: [target]
+            },
+            { quoted: info }
+          );
+
         } catch (error) {
           console.error('Erro ao processar comando perfil:', error);
-          await reply('Ocorreu um erro ao gerar o perfil 💔');
+          await reply(
+            'Ocorreu um erro ao gerar o perfil 💔'
+          );
         }
         break;
+
       case 'ppt':
         try {
           if (!q) return reply(`🎮 *Pedra, Papel ou Tesoura*\n\n💡 *Como jogar:*\n• Escolha sua jogada após o comando\n• Ex: ${prefix}ppt pedra\n• Ex: ${prefix}ppt papel\n• Ex: ${prefix}ppt tesoura\n\n🎲 Vamos ver quem ganha!`);
