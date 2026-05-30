@@ -32893,15 +32893,28 @@ ${prefix}wl.add @usuario | antilink,antistatus`);
           const momentToMark = moments[momentIndex];
           
           // Citar apenas a mensagem original, sem enviar texto
-          if (momentToMark.sender) {
-            // Responder com reação ao invés de texto
-            await nazu.react('👍', {
-              key: {
-                remoteJid: from,
-                fromMe: false,
-                id: momentToMark.originalMessageId
-              }
-            });
+          if (momentToMark.sender && momentToMark.originalMessageId) {
+            try {
+              await nazu.sendMessage(from, {
+                text: '✅ Momento marcado com sucesso!'
+              }, {
+                quoted: {
+                  key: {
+                    remoteJid: from,
+                    fromMe: momentToMark.originalFromMe || false,
+                    id: momentToMark.originalMessageId
+                  },
+                  message: {
+                    extendedTextMessage: {
+                      text: momentToMark.content || ''
+                    }
+                  }
+                }
+              });
+            } catch (err) {
+              console.error('Erro ao citar mensagem:', err);
+              await reply('✅ Momento marcado com sucesso!');
+            }
           } else {
             await reply('❌ Não foi possível recuperar a mensagem original!');
           }
