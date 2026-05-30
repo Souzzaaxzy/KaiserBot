@@ -89,6 +89,7 @@ ${menuTopBorder}
 ${middleBorder}
 ${middleBorder}${menuItemIcon}${prefix}salvarm
 ${middleBorder}${menuItemIcon}${prefix}moment
+${middleBorder}${menuItemIcon}${prefix}apm [número]
 ${bottomBorder}
 
 ${menuTopBorder}
