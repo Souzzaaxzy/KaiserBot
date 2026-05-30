@@ -3484,6 +3484,7 @@ export {
   saveMomentsData,
   addMoment,
   getMoments,
+  deleteMoment,
 };
 
 // ===== Sistema de Momentos (Salvamento de mensagens) =====
@@ -3541,5 +3542,30 @@ const getMoments = (groupId) => {
   } catch (error) {
     console.error('❌ Erro ao obter momentos:', error);
     return [];
+  }
+};
+
+const deleteMoment = (groupId, momentIndex) => {
+  try {
+    const data = getMomentsData();
+    if (!data[groupId]) return { success: false, message: 'Nenhum momento encontrado' };
+    
+    // Filtrar apenas momentos de hoje
+    const today = new Date().toDateString();
+    const todayMoments = data[groupId].filter(m => new Date(m.savedAt).toDateString() === today);
+    
+    if (momentIndex < 0 || momentIndex >= todayMoments.length) {
+      return { success: false, message: 'Número de momento inválido!' };
+    }
+    
+    // Encontrar e remover o momento
+    const momentToDelete = todayMoments[momentIndex];
+    data[groupId] = data[groupId].filter(m => m.id !== momentToDelete.id);
+    
+    saveMomentsData(data);
+    return { success: true, message: 'Momento deletado com sucesso!' };
+  } catch (error) {
+    console.error('❌ Erro ao deletar momento:', error);
+    return { success: false, message: 'Erro ao deletar momento' };
   }
 };

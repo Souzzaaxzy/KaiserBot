@@ -256,6 +256,7 @@ import {
   saveMomentsData,
   addMoment,
   getMoments,
+  deleteMoment,
 } from './utils/database.js';
 import { parseCustomCommandMeta, buildUsageFromParams, parseArgsFromString, escapeRegExp, validateParamValue } from './utils/helpers.js';
 import {
@@ -32809,23 +32810,81 @@ ${prefix}wl.add @usuario | antilink,antistatus`);
             responseText += `${i + 1}. 👤 ${m.senderName} - ${time}\n`;
             
             if (m.type === 'text') {
-              responseText += `   📝 ${m.content.substring(0, 50)}${m.content.length > 50 ? '...' : ''}\n\n`;
+              responseText += `   📝 ${m.content.substring(0, 50)}${m.content.length > 50 ? '...' : ''}\n`;
+              responseText += `   📄 Usar: ${groupPrefix}apm ${i + 1}\n\n`;
             } else if (m.type === 'image') {
-              responseText += `   🖼️ Foto${m.caption ? ` - ${m.caption.substring(0, 30)}` : ''}\n\n`;
+              responseText += `   🖼️ Foto${m.caption ? ` - ${m.caption.substring(0, 30)}` : ''}\n`;
+              responseText += `   📄 Usar: ${groupPrefix}apm ${i + 1}\n\n`;
             } else if (m.type === 'video') {
-              responseText += `   🎥 Vídeo${m.caption ? ` - ${m.caption.substring(0, 30)}` : ''}\n\n`;
+              responseText += `   🎥 Vídeo${m.caption ? ` - ${m.caption.substring(0, 30)}` : ''}\n`;
+              responseText += `   📄 Usar: ${groupPrefix}apm ${i + 1}\n\n`;
             } else if (m.type === 'audio') {
-              responseText += `   🎵 Áudio\n\n`;
+              responseText += `   🎵 Áudio\n`;
+              responseText += `   📄 Usar: ${groupPrefix}apm ${i + 1}\n\n`;
             } else if (m.type === 'sticker') {
-              responseText += `   🎭 Sticker\n\n`;
+              responseText += `   🎭 Sticker\n`;
+              responseText += `   📄 Usar: ${groupPrefix}apm ${i + 1}\n\n`;
             }
           }
 
-          responseText += `\n📌 Limite: ${moments.length}/10 momentos por dia`;
+          responseText += `\n📌 Limite: ${moments.length}/10 momentos por dia\n🚮 Para apagar um momento, use ${groupPrefix}apm [número]`;
           await reply(responseText);
+          
+          // Enviar as mídias realmente
+          for (let i = 0; i < moments.length; i++) {
+            const m = moments[i];
+            try {
+              if (m.type === 'image') {
+                const imageBuffer = Buffer.from(m.content, 'base64');
+                await nazu.sendMessage(from, {
+                  image: imageBuffer,
+                  caption: `${i + 1}. 👤 ${m.senderName}\n${m.caption || ''}`
+                });
+              } else if (m.type === 'video') {
+                const videoBuffer = Buffer.from(m.content, 'base64');
+                await nazu.sendMessage(from, {
+                  video: videoBuffer,
+                  caption: `${i + 1}. 👤 ${m.senderName}\n${m.caption || ''}`
+                });
+              } else if (m.type === 'audio') {
+                const audioBuffer = Buffer.from(m.content, 'base64');
+                await nazu.sendMessage(from, {
+                  audio: audioBuffer,
+                  ptt: m.ptt || false,
+                  mimetype: 'audio/ogg; codecs=opus'
+                });
+              } else if (m.type === 'sticker') {
+                const stickerBuffer = Buffer.from(m.content, 'base64');
+                await nazu.sendMessage(from, {
+                  sticker: stickerBuffer
+                });
+              }
+            } catch (mediaError) {
+              console.error(`Erro ao enviar mídia ${i + 1}:`, mediaError);
+            }
+          }
         } catch (e) {
           console.error('Erro no comando moment:', e);
           await reply('❌ Ocorreu um erro ao listar momentos 💔');
+        }
+        break;
+
+      case 'apm':
+        try {
+          if (!isGroup) return reply('🚫 Este comando só funciona em grupos!');
+          if (!q) return reply(`📄 Como usar:\n\n${groupPrefix}apm [número]\n\nExemplo: ${groupPrefix}apm 1`);
+
+          const momentIndex = parseInt(q) - 1;
+          const result = deleteMoment(from, momentIndex);
+          
+          if (result.success) {
+            await reply(`✅ ${result.message}`);
+          } else {
+            await reply(`❌ ${result.message}`);
+          }
+        } catch (e) {
+          console.error('Erro no comando apm:', e);
+          await reply('❌ Ocorreu um erro ao apagar o momento 💔');
         }
         break;
 
