@@ -9084,6 +9084,8 @@ if (isCmd && command && !isOwner) {
         }
 
         // Calcular stats unificados (Base + Level + Equipamentos + Classe)
+        const myStats = calculateCombatStats(me, econ);
+        const oppStats = calculateCombatStats(opponent, econ);
 
         const myPower = myStats.attack;
         const myDefense = myStats.defense;
