@@ -9790,8 +9790,8 @@ if (isCmd && command && !isOwner) {
             return reply('❌ Party está cheia!');
           }
 
-          if ((me.level || 1) < dg.level) {
-            return reply(`🔒 Você precisa ser nível ${dg.level}+!`);
+          if ((me?.level || 1) < (dg?.level || 1)) {
+            return reply(`🔒 Você precisa ser nível ${dg?.level || 1}+!`);
           }
 
           party.members.push(sender);
@@ -9831,19 +9831,21 @@ if (isCmd && command && !isOwner) {
           }
 
           // Poder do boss
-          const poderBoss = (dg.level || 1) * 100 + (dg.players || 2) * 50;
+          const bossLevel = dg?.level || 1;
+          const bossPlayers = dg?.players || 2;
+          const poderBoss = bossLevel * 100 + bossPlayers * 50;
 
           // Calcular chance de vitória
-          const chance = Math.min(95, Math.max(20, (poderTotal / poderBoss) * 50 + 25));
+          const ratio = poderBoss > 0 ? poderTotal / poderBoss : 1;
+          const chance = Math.min(95, Math.max(20, ratio * 50 + 25));
           const vitoria = Math.random() * 100 < chance;
 
           let text = `╭━━━⊱ ${dg.emoji} *${dg.name}* ⊱━━━╮\n\n`;
           text += `👥 *PARTY:*\n`;
           myParty.members.forEach(m => {
             const u = getEcoUser(econ, m);
-            if (u) {
-              text += `• @${m.split('@')[0]} (Nv.${u.level || 1})\n`;
-            }
+            const level = u?.level || 1;
+            text += `• @${m.split('@')[0]} (Nv.${level})\n`;
           });
           text += `\n⚔️ Poder Total: ${poderTotal}\n`;
           text += `👹 Boss: ${dg.boss}\n\n`;

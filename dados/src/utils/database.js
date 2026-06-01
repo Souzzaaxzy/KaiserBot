@@ -1612,6 +1612,9 @@ function migrateAndValidateEcoUser(user) {
 
   // === RPG - STATS BASE ===
   user.level = validateNumber(user.level, 1, 1);
+  if (user.level === undefined || user.level === null || isNaN(user.level)) {
+    user.level = 1;
+  }
   user.exp = validateNumber(user.exp, 0);
   user.prestige = validateNumber(user.prestige, 0);
   user.classe = user.classe || null;
