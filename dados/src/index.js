@@ -19054,6 +19054,7 @@ case 'addaluguel':
             videoUrl = q;
             await nazu.sendMessage(from, { react: { text: '🔍', key: info.key } });
 
+            await nazu.sendMessage(from, { react: { text: '⏳', key: info.key } });
             youtube.mp3(videoUrl, 128)
               .then(async (dlRes) => {
                 if (!dlRes.ok)
@@ -19064,6 +19065,7 @@ case 'addaluguel':
                     audio: dlRes.buffer,
                     mimetype: 'audio/mpeg'
                   }, { quoted: info });
+                  await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
                 } catch (audioError) {
                   if (String(audioError).includes("ENOSPC") || String(audioError).includes("size")) {
                     await nazu.sendMessage(from, { text: '📦 Arquivo muito grande para enviar como áudio, enviando como documento...' }, { quoted: info });
@@ -19123,6 +19125,7 @@ case 'addaluguel':
                 footer: `${nomebot} • Versão ${botVersion}`
               }, { quoted: info }).catch((sendErr) => console.error('Erro ao enviar mensagem de resultado (busca):', sendErr));
 
+              await nazu.sendMessage(from, { react: { text: '⏳', key: info.key } });
               youtube.mp3(videoUrl, 128)
                 .then(async (dlRes) => {
                   if (!dlRes.ok) return nazu.sendMessage(from, { text: `❌ Erro ao baixar o áudio: ${dlRes.msg}` }, { quoted: info });
@@ -19132,6 +19135,7 @@ case 'addaluguel':
                       audio: dlRes.buffer,
                       mimetype: 'audio/mpeg'
                     }, { quoted: info });
+                    await nazu.sendMessage(from, { react: { text: '✅', key: info.key } });
                   } catch (audioError) {
                     if (String(audioError).includes("ENOSPC") || String(audioError).includes("size")) {
                       await nazu.sendMessage(from, { text: '📦 Arquivo muito grande para enviar como áudio, enviando como documento...' }, { quoted: info });
@@ -19193,7 +19197,7 @@ case 'addaluguel':
             return reply('❌ Por favor, envie um link válido do Spotify.\n\n💡 Dica: Use o comando play2 para buscar por nome!');
           }
 
-          await reply('🎵 Baixando do Spotify... Aguarde um momento!');
+          await nazu.sendMessage(from, { react: { text: '🎵', key: info.key } });
 
           const downloadResult = await spotifyModule.download(q);
 
