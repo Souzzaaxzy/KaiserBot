@@ -6026,6 +6026,11 @@ if (isCmd && command && !isOwner) {
 
           if (sub === 'perfilrpg') {
             // Perfil completo do RPG
+            // Sincroniza XP e Level (Garante que o bot original e o Kaiser leiam o mesmo campo)
+            me.exp = me.exp || me.xp || 0;
+            me.xp = me.exp;
+            me.level = me.level || 1;
+
             const total = (me.wallet || 0) + (me.bank || 0);
             const level = me.level || 1;
             const exp = me.exp || 0;
@@ -6157,12 +6162,11 @@ if (isCmd && command && !isOwner) {
             text += `├ Clã: ${clanInfo}\n`;
             text += `└ Casa: ${houseInfo}\n\n`;
 
-            const totalPower = (me.power || 100) + (me.attackBonus || 0) + ((me.classeBonuses && me.classeBonuses.attack) || 0);
             text += `⚔️ *COMBATE*\n`;
             text += `├ Vitórias: ${battlesWon}\n`;
             text += `├ Derrotas: ${battlesLost}\n`;
             text += `├ Win Rate: ${winRate}%\n`;
-            text += `└ Poder: ${totalPower}\n\n`;
+            text += `└ Poder Total: ${combatStats.power}\n\n`;
 
             text += `🛠️ *HABILIDADES (TOP 3)*\n`;
             topSkills.forEach((sk, i) => {
@@ -9887,7 +9891,30 @@ if (isCmd && command && !isOwner) {
             myParty.members.forEach(m => {
               const u = getEcoUser(econ, m);
               u.wallet += Math.floor(dg.reward / myParty.members.length);
-              u.xp = (u.xp || 0) + Math.floor(dg.xp / myParty.members.length);
+              
+              // Sincroniza xp e exp (Nazuna usa exp, Kaiser estava usando xp)
+              u.exp = (u.exp || 0) + Math.floor(dg.xp / myParty.members.length);
+              u.xp = u.exp;
+
+              // Lógica de Level Up
+              const checkLevelUp = (user) => {
+                let leveled = false;
+                while (true) {
+                  const nextXp = Math.floor(100 * Math.pow(1.5, (user.level || 1) - 1));
+                  if (user.exp >= nextXp) {
+                    user.exp -= nextXp;
+                    user.xp = user.exp;
+                    user.level = (user.level || 1) + 1;
+                    user.power = (user.power || 100) + 15;
+                    leveled = true;
+                  } else {
+                    break;
+                  }
+                }
+                return leveled;
+              };
+              checkLevelUp(u);
+              recalcEquipmentBonuses(u, econ.shop);
             });
             // Remove a party após vitória
             delete econ.dungeonParties[myParty.id];
