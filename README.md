@@ -1,4 +1,4 @@
-#                  👑 KaiserBot
+          #                  👑 KaiserBot
 
 <p align="center">
   <img src="dados/midias/menu.gif" alt="KaiserBot GIF" width="600">
