@@ -25039,19 +25039,29 @@ ${prefix}togglecmdvip premium_ia off`);
           }
 
           await nazu.sendMessage(from, {
-            text: `╭⊱ ⚡ *STATUS DA CONEXÃO* ⚡ ⊱╮
-│
-│ 📡 *Informações de Latência*
-│ ├─ ${statusEmoji} Velocidade: *${speedConverted.toFixed(3)}s*
-│ ├─ ${statusCor} Qualidade: *${statusTexto}*
-│ └─ 📊 Status: *${speedConverted <= 2 ? 'Ótima' : speedConverted <= 5 ? 'Boa' : speedConverted <= 8 ? 'Regular' : 'Precisa Melhorar'}*
-│
-│ ⏱️ *Informações do Sistema*
-│ ├─ 🟢 Tempo Online: *${uptimeBot}*
-│ ├─ 📈 Resposta: *${speedConverted <= 1 ? 'Instantânea' : speedConverted <= 3 ? 'Rápida' : 'Lenta'}*
-│ └─ 🌐 Servidor: *Online*
-│
-╰━━━━━━━━━━━━━━━━━━━━━━━━╯`
+            text: `╭═══════════════════════╮
+│      ⚡ 𝐊𝐀𝐈𝐒𝐄𝐑 𝐏𝐈𝐍𝐆 ⚡
+╰═══════════════════════╯
+
+╭─ 📡 𝐂𝐎𝐍𝐄𝐗𝐀̃𝐎
+│ ◈ Latência: ${speedConverted.toFixed(3)}s
+│ ◈ Qualidade: ${statusTexto}
+│ ◈ Status: Estável
+╰───────────────
+
+╭─ 💻 𝐒𝐈𝐒𝐓𝐄𝐌𝐀
+│ ◈ Online: ${uptimeBot}
+│ ◈ Resposta: Rápida
+│ ◈ Servidor: Online
+╰───────────────
+
+╭─ 🤖 𝐊𝐀𝐈𝐒𝐄𝐑𝐁𝐎𝐓
+│ ◈ Performance: Máxima
+│ ◈ Segurança: Ativa
+│ ◈ Operação: Perfeita
+╰───────────────
+
+『 💎 𝐒𝐄𝐌𝐏𝐑𝐄 𝐏𝐑𝐎𝐍𝐓𝐎 𝐏𝐀𝐑𝐀 𝐀 𝐀𝐂̧𝐀̃𝐎 💎 』`
           }, { quoted: info });
         } catch (e) {
           console.error("Erro no comando ping:", e);
