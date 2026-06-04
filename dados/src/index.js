@@ -6753,21 +6753,30 @@ if (isCmd && command && !isOwner) {
 
           if (sub === 'vagas') {
             let jobs = econ.jobCatalog || {};
-            // Se não houver vagas no arquivo de economia, usar catálogo padrão embutido
             if (!jobs || Object.keys(jobs).length === 0) {
               jobs = {
-                "repositor": { name: "Repositor", min: 80, max: 140 },
-                "mecanico": { name: "Mecânico", min: 158, max: 263 },
-                "empresario": { name: "Empresário", min: 210, max: 368 },
-                "garota_de_programa": { name: "Garota(o) de Programa", min: 273, max: 441 }
+                "dev": { name: "Desenvolvedor Fullstack", min: 1200, max: 2500 },
+                "agente": { name: "Agente Secreto", min: 1800, max: 3200 },
+                "cacador": { name: "Caçador de Recompensas", min: 2200, max: 4000 },
+                "magnata": { name: "Magnata de Cripto", min: 3000, max: 6500 },
+                "cientista": { name: "Cientista Louco", min: 2000, max: 4500 }
               };
             }
 
-            let txt = '╭━━━⊱ 💼 *VAGAS DE EMPREGO* 💼 ⊱━━━╮\n│\n';
+            let txt = `╭─────────────────────⭓\n` +
+                      `│      💼 𝗞𝗔𝗜𝗦𝗘𝗥 𝗝𝗢𝗕𝗦 💼\n` +
+                      `├─────────────────────⭓\n│\n`;
+            
+            const icons = { dev: '🛠️', agente: '🕵️', cacador: '🏴‍☠️', magnata: '💎', cientista: '🧪' };
+            
             Object.entries(jobs).forEach(([k, j]) => {
-              txt += `│ 🔹 *${k}*\n│   ${j.name}\n│   💰 ${fmt(j.min)}-${fmt(j.max)}\n│\n`;
+              const icon = icons[k] || '💼';
+              txt += `│ ${icon} **${j.name}**\n` +
+                     `│ 💰 Salário » ${fmt(j.min)} - ${fmt(j.max)}\n` +
+                     `│ 📝 Comando » !emprego ${k}\n│\n`;
             });
-            txt += `╰━━━━━━━━━━━━━━━━━━━━━━━━━━━╯\n\n💡 Use: ${prefix}emprego <vaga>`;
+            
+            txt += `╰─────────────────────⭓\n\n💡 *Dica: Use !trabalhar para receber seu salário!*`;
             return reply(txt);
           }
           if (sub === 'emprego') {
@@ -6784,10 +6793,11 @@ if (isCmd && command && !isOwner) {
 ╰━━━━━━━━━━━━━━━━━━━━━╯`);
 
             const defaultJobs = {
-              "repositor": { name: "Repositor", min: 80, max: 140 },
-              "mecanico": { name: "Mecânico", min: 158, max: 263 },
-              "empresario": { name: "Empresário", min: 210, max: 368 },
-              "garota_de_programa": { name: "Garota(o) de Programa", min: 273, max: 441 }
+              "dev": { name: "Desenvolvedor Fullstack", min: 1200, max: 2500 },
+              "agente": { name: "Agente Secreto", min: 1800, max: 3200 },
+              "cacador": { name: "Caçador de Recompensas", min: 2200, max: 4000 },
+              "magnata": { name: "Magnata de Cripto", min: 3000, max: 6500 },
+              "cientista": { name: "Cientista Louco", min: 2000, max: 4500 }
             };
 
             const jobCatalog = (econ.jobCatalog && Object.keys(econ.jobCatalog).length) ? econ.jobCatalog : defaultJobs;
