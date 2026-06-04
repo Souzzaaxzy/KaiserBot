@@ -31430,13 +31430,13 @@ ${nivelSorte >= 70 ? '🎉 Hoje é seu dia de sorte!' : nivelSorte >= 40 ? '🤔
           try {
             if (isOwner) {
               cargo = 'Dono';
-            } else if (isGroupAdmin) {
+            } else if (idInArray(sender, groupAdmins)) {
               cargo = 'Admin';
-          } else if (isModerator) {
-            cargo = 'Moderador';
-          } else if (groupData.alphas?.includes(targetJid)) {
-            cargo = 'Alpha';
-          }
+            } else if (groupData.alphas?.includes(sender)) {
+              cargo = 'Alpha';
+            } else if (groupData.moderators?.includes(sender)) {
+              cargo = 'Moderador';
+            }
           } catch (error) {
             console.warn('Erro ao obter cargo:', error.message);
           }
