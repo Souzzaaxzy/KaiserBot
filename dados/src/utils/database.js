@@ -2442,16 +2442,21 @@ function checkLevelUp(userId, userData, levelingData, nazu, from) {
       // Usa salvamento seguro
       saveLevelingSafe(levelingData);
 
-      let levelUpText = `╭━━━⊱ ⭐ *LEVEL UP!* ⭐ ⊱━━━╮\n`;
-      levelUpText += `│\n`;
-      levelUpText += `│ 👤 @${getUserName(userId)}\n`;
-      levelUpText += `│\n`;
-      levelUpText += `│ 📊 *Nível Atual:* ${userData.level}\n`;
-      levelUpText += `│ ✨ *XP:* ${userData.xp}/${calculateNextLevelXp(userData.level)}\n`;
-      levelUpText += `│ 🎖️ *Patente:* ${userData.patent}\n`;
-      levelUpText += `│\n`;
-      levelUpText += `╰━━━━━━━━━━━━━━━━━━━━━━╯\n`;
-      levelUpText += `\n🎊 *Parabéns pelo progresso!* 🎊`;
+      const oldLevel = userData.level - 1;
+      const nextXp = calculateNextLevelXp(userData.level);
+      
+      let levelUpText = `╭━〔 ⭐ LEVEL UP 〕━⬣\n`;
+      levelUpText += `┃\n`;
+      levelUpText += `┃ 👤 @${getUserName(userId)}\n`;
+      levelUpText += `┃\n`;
+      levelUpText += `┃ 🆙 Nível: ${oldLevel} ➜ ${userData.level}\n`;
+      levelUpText += `┃ ✨ XP: ${userData.xp}/${nextXp}\n`;
+      levelUpText += `┃ 🏅 Patente: ${userData.patent || 'Iniciante'}\n`;
+      levelUpText += `┃\n`;
+      levelUpText += `╰━━━━━━━━━━━━━━⬣\n\n`;
+      levelUpText += `🎉 Evolução concluída!\n\n`;
+      levelUpText += `💡 Continue ativo para alcançar\n`;
+      levelUpText += `a próxima patente.`;
 
       if (nazu && from) {
         nazu.sendMessage(from, {
