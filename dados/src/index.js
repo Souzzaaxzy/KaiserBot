@@ -6290,26 +6290,41 @@ if (isCmd && command && !isOwner) {
             return reply(text, mentions.length > 0 ? { mentions } : undefined);
           }
 
-          if (sub === 'carteira') {
+          if (sub === 'carteira' || sub === 'money' || sub === 'saldo' || sub === 'bal') {
             const total = (me.wallet || 0) + (me.bank || 0);
-            return reply(`╭━━━⊱ 👤 *PERFIL FINANCEIRO* 👤 ⊱━━━╮
-│
-│   *Carteira:* ${fmt(me.wallet)}
-│ 🏦 *Banco:* ${fmt(me.bank)}
-│   *Total:* ${fmt(total)}
-│
-│ 💼 *Emprego:* ${me.job ? econ.jobCatalog[me.job]?.name || me.job : 'Desempregado(a)'}
-│
-╰━━━━━━━━━━━━━━━━━━━━━━━━━╯`);
+            const bankCap = isFinite(bankCapacity) ? bankCapacity : '∞';
+            const bankUsage = bankCap === '∞' ? '0%' : Math.floor(((me.bank || 0) / bankCap) * 100) + '%';
+            
+            const walletMsg = `╭─────────────────────⭓\n` +
+              `│      💰 𝗞𝗔𝗜𝗦𝗘𝗥 𝗕𝗔𝗡𝗞 💰\n` +
+              `├─────────────────────⭓\n` +
+              `│\n` +
+              `│ 👤 Usuário » @${sender.split('@')[0]}\n` +
+              `│ 💼 Carteira » ${fmt(me.wallet)}\n` +
+              `│ 🏦 Banco » ${fmt(me.bank)}\n` +
+              `│ 💎 Total » ${fmt(total)}\n` +
+              `│\n` +
+              `├─────────────────────⭓\n` +
+              `│ 📦 Cap. Banco » ${bankCap === '∞' ? 'Ilimitada' : fmt(bankCap)}\n` +
+              `│ 📊 Uso » ${bankUsage}\n` +
+              `│ 🛠️ Emprego » ${me.job ? econ.jobCatalog[me.job]?.name || me.job : 'Desempregado(a)'}\n` +
+              `│\n` +
+              `╰─────────────────────⭓`;
+              
+            return reply(walletMsg, { mentions: [sender] });
           }
           if (sub === 'banco') {
             const cap = isFinite(bankCapacity) ? bankCapacity : '∞';
-            return reply(`╭━━━⊱ 🏦 *BANCO* 🏦 ⊱━━━╮
-│
-│ 💰 *Saldo:* ${fmt(me.bank)}
-│ 📦 *Capacidade:* ${cap === '∞' ? 'Ilimitada' : fmt(cap)}
-│
-╰━━━━━━━━━━━━━━━━━━━━━╯`);
+            const usage = cap === '∞' ? '0%' : Math.floor(((me.bank || 0) / cap) * 100) + '%';
+            return reply(`╭─────────────────────⭓\n` +
+              `│      🏦 𝗞𝗔𝗜𝗦𝗘𝗥 𝗕𝗔𝗡𝗞 🏦\n` +
+              `├─────────────────────⭓\n` +
+              `│\n` +
+              `│ 💰 Saldo » ${fmt(me.bank)}\n` +
+              `│ 📦 Cap. » ${cap === '∞' ? 'Ilimitada' : fmt(cap)}\n` +
+              `│ 📊 Uso » ${usage}\n` +
+              `│\n` +
+              `╰─────────────────────⭓`);
           }
 
           if (sub === 'depositar' || sub === 'dep') {
@@ -6322,14 +6337,15 @@ if (isCmd && command && !isOwner) {
             const toDep = Math.min(amount, space);
             me.wallet -= toDep; me.bank += toDep;
             saveEconomy(econ);
-            return reply(`╭━━━⊱ 💰 *DEPÓSITO* 💰 ⊱━━━╮
-│
-│ ✅ Depositado: ${fmt(toDep)}
-│
-│ 🏦 Banco: ${fmt(me.bank)}
-│ 💼 Carteira: ${fmt(me.wallet)}
-│
-╰━━━━━━━━━━━━━━━━━━━━━╯`);
+            return reply(`╭─────────────────────⭓\n` +
+              `│      💰 𝗗𝗘𝗣𝗢́𝗦𝗜𝗧𝗢 💰\n` +
+              `├─────────────────────⭓\n` +
+              `│\n` +
+              `│ ✅ Valor » ${fmt(toDep)}\n` +
+              `│ 🏦 Banco » ${fmt(me.bank)}\n` +
+              `│ 💼 Carteira » ${fmt(me.wallet)}\n` +
+              `│\n` +
+              `╰─────────────────────⭓`);
           }
           if (sub === 'sacar' || sub === 'saque') {
             const amount = parseAmount(q.split(' ')[0], me.bank);
@@ -6341,30 +6357,35 @@ if (isCmd && command && !isOwner) {
             me.bank -= amount;
             me.wallet += received;
             saveEconomy(econ);
-            return reply(`╭━━━⊱ 💳 *SAQUE* 💳 ⊱━━━╮
-│
-│ 💰 Valor sacado: ${fmt(amount)}
-│ 💸 Taxa (5%): ${fmt(taxa)}
-│ ✅ Recebido: ${fmt(received)}
-│
-│ 🏦 Banco: ${fmt(me.bank)}
-│ 💼 Carteira: ${fmt(me.wallet)}
-│
-╰━━━━━━━━━━━━━━━━━━━━━╯`);
+            return reply(`╭─────────────────────⭓\n` +
+              `│      💳 𝗦𝗔𝗤𝗨𝗘 💳\n` +
+              `├─────────────────────⭓\n` +
+              `│\n` +
+              `│ 💰 Valor » ${fmt(amount)}\n` +
+              `│ 💸 Taxa (5%) » ${fmt(taxa)}\n` +
+              `│ ✅ Recebido » ${fmt(received)}\n` +
+              `├─────────────────────⭓\n` +
+              `│ 🏦 Banco » ${fmt(me.bank)}\n` +
+              `│ 💼 Carteira » ${fmt(me.wallet)}\n` +
+              `│\n` +
+              `╰─────────────────────⭓`);
           }
 
           if (sub === 'transferir' || sub === 'pix') {
-            if (!mentioned) return reply(`╭━━━⊱ 💸 *TRANSFERÊNCIA* 💸 ⊱━━━╮
-│
-│ 👥 Marque um usuário e informe
-│    o valor a transferir
-│
-│ ⚠️ *Taxa de transferência: 15%*
-│
-│ 📝 *Exemplo:*
-│ ${prefix}${sub} @user 100
-│
-╰━━━━━━━━━━━━━━━━━━━━━━━╯`);
+            if (!mentioned) return reply(`╭─────────────────────⭓\n` +
+              `│      💸 𝗧𝗥𝗔𝗡𝗦𝗙𝗘𝗥𝗘̂𝗡𝗖𝗜𝗔 💸\n` +
+              `├─────────────────────⭓\n` +
+              `│\n` +
+              `│ 👥 Marque um usuário e informe\n` +
+              `│    o valor a transferir\n` +
+              `│\n` +
+              `│ ⚠️ Taxa » 15%\n` +
+              `│\n` +
+              `├─────────────────────⭓\n` +
+              `│ 📝 Exemplo:\n` +
+              `│ ${prefix}${sub} @user 100\n` +
+              `│\n` +
+              `╰─────────────────────⭓`);
             const amount = parseAmount(args.slice(-1)[0], me.wallet);
             if (!isFinite(amount) || amount <= 0) return reply('❌ Informe um valor válido.');
             // TAXA DE TRANSFERÊNCIA: 15%
@@ -6376,14 +6397,16 @@ if (isCmd && command && !isOwner) {
             me.wallet -= totalNeeded; // Desconta valor + taxa
             other.wallet += amount; // Destinatário recebe valor sem taxa
             saveEconomy(econ);
-            return reply(`╭━━━⊱ ✅ *TRANSFERÊNCIA* ✅ ⊱━━━╮
-│
-│ 💸 Transferido: ${fmt(amount)}
-│ 💰 Taxa (15%): ${fmt(taxa)}
-│ 📊 Total debitado: ${fmt(totalNeeded)}
-│ 👤 Para: @${getUserName(mentioned)}
-│
-╰━━━━━━━━━━━━━━━━━━━━━━━━╯`, { mentions: [mentioned] });
+            return reply(`╭─────────────────────⭓\n` +
+              `│      ✅ 𝗧𝗥𝗔𝗡𝗦𝗙𝗘𝗥𝗘̂𝗡𝗖𝗜𝗔 ✅\n` +
+              `├─────────────────────⭓\n` +
+              `│\n` +
+              `│ 💸 Enviado » ${fmt(amount)}\n` +
+              `│ 💰 Taxa (15%) » ${fmt(taxa)}\n` +
+              `│ 📊 Total » ${fmt(totalNeeded)}\n` +
+              `│ 👤 Para » @${getUserName(mentioned)}\n` +
+              `│\n` +
+              `╰─────────────────────⭓`, { mentions: [mentioned] });
           }
 
           if (sub === 'loja' || sub === 'lojarps') {
