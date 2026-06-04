@@ -13,7 +13,8 @@ export default async function menuadm(prefix, botName = "MeuBot", userName = "Us
     partnershipsMenuTitle = "🤝 PARCERIAS",
     activationsMenuTitle = "⚡ ATIVAÇÕES",
     settingsMenuTitle = "🎨 CONFIGURAÇÕES",
-    electionMenuTitle = "🏛️ SISTEMA DE ELEIÇÃO"
+    electionMenuTitle = "🏛️ SISTEMA DE ELEIÇÃO",
+    alphasMenuTitle = "🐺 CARGO ALPHA"
 } = {}) {
     return `${header}
 
@@ -109,6 +110,17 @@ ${middleBorder} ${menuItemIcon}${prefix}listmods
 ${middleBorder} ${menuItemIcon}${prefix}grantmodcmd
 ${middleBorder} ${menuItemIcon}${prefix}revokemodcmd
 ${middleBorder} ${menuItemIcon}${prefix}listmodcmds
+${bottomBorder}
+
+${menuTopBorder}
+│ ${alphasMenuTitle}
+${middleBorder}
+${middleBorder} ${menuItemIcon}${prefix}addalpha
+${middleBorder} ${menuItemIcon}${prefix}delalpha
+${middleBorder} ${menuItemIcon}${prefix}listalphas
+${middleBorder} ${menuItemIcon}${prefix}grantalphacmd
+${middleBorder} ${menuItemIcon}${prefix}revokealphacmd
+${middleBorder} ${menuItemIcon}${prefix}listalphacmds
 ${bottomBorder}
 
 ${menuTopBorder}

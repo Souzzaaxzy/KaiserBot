@@ -1998,6 +1998,8 @@ async function NazuninhaBotExec(nazu, info, store, messagesCache, rentalExpirati
       groupData.minMessage = groupData.minMessage || null;
       groupData.moderators = groupData.moderators || [];
       groupData.allowedModCommands = groupData.allowedModCommands || [];
+      groupData.alphas = groupData.alphas || [];
+      groupData.allowedAlphaCommands = groupData.allowedAlphaCommands || [];
       groupData.mutedUsers = groupData.mutedUsers || {};
       groupData.mutedUsers2 = groupData.mutedUsers2 || {};
       groupData.levelingEnabled = groupData.levelingEnabled || false;
@@ -2319,11 +2321,12 @@ async function NazuninhaBotExec(nazu, info, store, messagesCache, rentalExpirati
     let isGroupAdmin = false;
     if (isGroup) {
       const isModeratorActionAllowed = groupData.moderators?.includes(sender) && groupData.allowedModCommands?.includes(command);
+      const isAlphaActionAllowed = groupData.alphas?.includes(sender) && groupData.allowedAlphaCommands?.includes(command);
 
       // Usa a função idsMatch para comparação robusta
       const isAdminMatch = idInArray(sender, groupAdmins);
 
-      isGroupAdmin = isAdminMatch || isOwner || isModeratorActionAllowed;
+      isGroupAdmin = isAdminMatch || isOwner || isModeratorActionAllowed || isAlphaActionAllowed;
 
       // Debug: log das verificações de admin
       debugLog('Verificação de admin:', {
@@ -2334,6 +2337,7 @@ async function NazuninhaBotExec(nazu, info, store, messagesCache, rentalExpirati
         isAdminMatch,
         isGroupAdmin,
         isModerator: isModeratorActionAllowed,
+        isAlpha: isAlphaActionAllowed,
         isBotAdmin,
         botNumber: botNumberLid?.substring(0, 30)
       });
@@ -25048,6 +25052,7 @@ ${prefix}togglecmdvip premium_ia off`);
             `┊ 🚫 Usuários bloqueados: ${groupData.blockedUsers ? Object.keys(groupData.blockedUsers).length : 0}`,
             `┊ 😴 AFKs ativos: ${groupData.afkUsers ? Object.keys(groupData.afkUsers).length : 0}`,
             `┊ 🧑‍⚖️ Moderadores: ${Array.isArray(groupData.moderators) ? groupData.moderators.length : 0}`,
+            `┊ 🐺 Alphas: ${Array.isArray(groupData.alphas) ? groupData.alphas.length : 0}`,
             "╰───────────────╯"
           ].join('\n');
           const lines = [linesHeader, configsSection].join('\n');
@@ -31421,9 +31426,11 @@ ${nivelSorte >= 70 ? '🎉 Hoje é seu dia de sorte!' : nivelSorte >= 40 ? '🤔
               cargo = 'Dono';
             } else if (isGroupAdmin) {
               cargo = 'Admin';
-            } else if (isModerator) {
-              cargo = 'Moderador';
-            }
+          } else if (isModerator) {
+            cargo = 'Moderador';
+          } else if (groupData.alphas?.includes(targetJid)) {
+            cargo = 'Alpha';
+          }
           } catch (error) {
             console.warn('Erro ao obter cargo:', error.message);
           }
@@ -32459,6 +32466,73 @@ ${groupData.rules.length}. ${q}`);
           await reply("Ocorreu um erro ao listar moderadores 💔");
         }
         break;
+
+      case 'addalpha':
+        try {
+          if (!isGroup) return reply("Este comando só funciona em grupos.");
+          if (!isGroupAdmin) return reply("Apenas administradores podem adicionar Alphas.");
+          if (!menc_os2) return reply(`Marque o usuário que deseja promover a Alpha. Ex: ${prefix}addalpha @usuario`);
+          const alphaToAdd = menc_os2;
+          if (groupData.alphas.includes(alphaToAdd)) {
+            return reply(`@${getUserName(alphaToAdd)} já é um Alpha.`, {
+              mentions: [alphaToAdd]
+            });
+          }
+          groupData.alphas.push(alphaToAdd);
+          fs.writeFileSync(groupFile, JSON.stringify(groupData, null, 2));
+          await reply(`✅ @${getUserName(alphaToAdd)} foi promovido a Alpha do grupo! 🐺`, {
+            mentions: [alphaToAdd]
+          });
+        } catch (e) {
+          console.error('Erro no comando addalpha:', e);
+          await reply("Ocorreu um erro ao adicionar Alpha 💔");
+        }
+        break;
+
+      case 'delalpha':
+        try {
+          if (!isGroup) return reply("Este comando só funciona em grupos.");
+          if (!isGroupAdmin) return reply("Apenas administradores podem remover Alphas.");
+          if (!menc_os2) return reply(`Marque o usuário que deseja remover de Alpha. Ex: ${prefix}delalpha @usuario`);
+          const alphaToRemove = menc_os2;
+          const alphaIndex = groupData.alphas.indexOf(alphaToRemove);
+          if (alphaIndex === -1) {
+            return reply(`@${getUserName(alphaToRemove)} não é um Alpha.`, {
+              mentions: [alphaToRemove]
+            });
+          }
+          groupData.alphas.splice(alphaIndex, 1);
+          fs.writeFileSync(groupFile, JSON.stringify(groupData, null, 2));
+          await reply(`✅ @${getUserName(alphaToRemove)} não é mais um Alpha do grupo.`, {
+            mentions: [alphaToRemove]
+          });
+        } catch (e) {
+          console.error('Erro no comando delalpha:', e);
+          await reply("Ocorreu um erro ao remover Alpha 💔");
+        }
+        break;
+
+      case 'listalphas':
+      case 'alphalist':
+        try {
+          if (!isGroup) return reply("Este comando só funciona em grupos.");
+          if (groupData.alphas.length === 0) {
+            return reply("🐺 Não há Alphas definidos para este grupo.");
+          }
+          let alphasMessage = `🐺 *Alphas do Grupo ${groupName}* 🐺\n\n`;
+          const mentionedUsers = [];
+          groupData.alphas.forEach(alphaJid => {
+            alphasMessage += `➥ @${getUserName(alphaJid)}\n`;
+            mentionedUsers.push(alphaJid);
+          });
+          await reply(alphasMessage, {
+            mentions: mentionedUsers
+          });
+        } catch (e) {
+          console.error('Erro no comando listalphas:', e);
+          await reply("Ocorreu um erro ao listar Alphas 💔");
+        }
+        break;
       case 'grantmodcmd':
       case 'addmodcmd':
         try {
@@ -32510,6 +32584,62 @@ ${groupData.rules.length}. ${q}`);
         } catch (e) {
           console.error('Erro no comando listmodcmds:', e);
           await reply("Ocorreu um erro ao listar comandos de moderadores 💔");
+        }
+        break;
+
+      case 'grantalphacmd':
+      case 'addalphacmd':
+        try {
+          if (!isGroup) return reply("Este comando só funciona em grupos.");
+          if (!isGroupAdmin) return reply("Apenas administradores podem gerenciar permissões de Alpha.");
+          if (!q) return reply(`Por favor, especifique o comando para permitir aos Alphas. Ex: ${prefix}grantalphacmd ban`);
+          const cmdToAllow = q.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "").replaceAll(prefix, "");
+          if (groupData.allowedAlphaCommands.includes(cmdToAllow)) {
+            return reply(`Comando "${cmdToAllow}" já está permitido para Alphas.`);
+          }
+          groupData.allowedAlphaCommands.push(cmdToAllow);
+          fs.writeFileSync(groupFile, JSON.stringify(groupData, null, 2));
+          await reply(`✅ Alphas agora podem usar o comando: ${prefix}${cmdToAllow}`);
+        } catch (e) {
+          console.error('Erro no comando grantalphacmd:', e);
+          await reply("Ocorreu um erro ao permitir comando para Alphas 💔");
+        }
+        break;
+
+      case 'revokealphacmd':
+      case 'delalphacmd':
+        try {
+          if (!isGroup) return reply("Este comando só funciona em grupos.");
+          if (!isGroupAdmin) return reply("Apenas administradores podem gerenciar permissões de Alpha.");
+          if (!q) return reply(`Por favor, especifique o comando para proibir aos Alphas. Ex: ${prefix}revokealphacmd ban`);
+          const cmdToDeny = q.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "").replaceAll(prefix, "");
+          const cmdIndex = groupData.allowedAlphaCommands.indexOf(cmdToDeny);
+          if (cmdIndex === -1) {
+            return reply(`Comando "${cmdToDeny}" não estava permitido para Alphas.`);
+          }
+          groupData.allowedAlphaCommands.splice(cmdIndex, 1);
+          fs.writeFileSync(groupFile, JSON.stringify(groupData, null, 2));
+          await reply(`✅ Alphas não podem mais usar o comando: ${prefix}${cmdToDeny}`);
+        } catch (e) {
+          console.error('Erro no comando revokealphacmd:', e);
+          await reply("Ocorreu um erro ao proibir comando para Alphas 💔");
+        }
+        break;
+
+      case 'listalphacmds':
+        try {
+          if (!isGroup) return reply("Este comando só funciona em grupos.");
+          if (groupData.allowedAlphaCommands.length === 0) {
+            return reply("🔧 Nenhum comando específico permitido para Alphas neste grupo.");
+          }
+          let cmdsMessage = `🔧 *Comandos Permitidos para Alphas em ${groupName}* 🔧\n\n`;
+          groupData.allowedAlphaCommands.forEach(cmd => {
+            cmdsMessage += `➥ ${prefix}${cmd}\n`;
+          });
+          await reply(cmdsMessage);
+        } catch (e) {
+          console.error('Erro no comando listalphacmds:', e);
+          await reply("Ocorreu um erro ao listar comandos de Alphas 💔");
         }
         break;
 
