@@ -26137,6 +26137,30 @@ break;
           await reply("❌ Ocorreu um erro interno. Tente novamente em alguns minutos.");
         }
         break;
+      case 'chamar': {
+        if (!isGroup) return reply('❌ Este comando só pode ser usado em grupos.');
+        if (!isGroupAdmin) return reply('❌ Apenas administradores podem usar este comando.');
+
+        const target = menc_os2 || (menc_jid2 && menc_jid2[0]);
+        if (!target) return reply('❌ Marque o usuário que deseja chamar.');
+
+        let count = parseInt(q.split(' ')[1]) || parseInt(q.split(' ')[0]) || 1;
+        if (isNaN(count) || count < 1) count = 1;
+        if (count > 50) return reply('❌ O limite máximo é de 50 chamadas.');
+
+        reply(`✅ Chamando @${target.split('@')[0]} ${count} vezes...`, { mentions: [target] });
+
+        for (let i = 0; i < count; i++) {
+          await nazu.sendMessage(from, { 
+            text: `🔔 Ei @${target.split('@')[0]}, você está sendo solicitado! 📢`, 
+            mentions: [target] 
+          });
+          // Pequeno delay para evitar flood excessivo que possa causar banimento
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        break;
+      }
+
       case 'banir':
       case 'ban':
       case 'b':
