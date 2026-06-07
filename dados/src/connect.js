@@ -1542,14 +1542,25 @@ async function createBotSocket(authDir) {
                         const groupId = update.key.remoteJid;
                         
                         try {
+                            // Lógica para o comando !tester: armazenar votos de enquetes gerais
+                            if (!global.pollVotes) global.pollVotes = {};
+                            if (!global.pollVotes[pollMsgId]) global.pollVotes[pollMsgId] = {};
+                            
+                            const voter = pollUpdate.pollUpdateMessageKey.participant || pollUpdate.pollUpdateMessageKey.remoteJid;
+                            const voteNames = pollUpdate.vote?.selectedOptions?.map(opt => opt.name) || [];
+                            
+                            if (voteNames.length > 0) {
+                                global.pollVotes[pollMsgId][voter] = voteNames;
+                            } else {
+                                delete global.pollVotes[pollMsgId][voter];
+                            }
+
+                            // Manter a lógica existente de eleições
                             const { loadElections, saveElections } = await import('./utils/database.js');
                             const elections = loadElections();
                             const election = elections.find(e => e.groupId === groupId && e.pollMsgId === pollMsgId);
                             
                             if (election && election.status === 'votacao') {
-                                const voter = pollUpdate.pollUpdateMessageKey.remoteJid || pollUpdate.pollUpdateMessageKey.participant;
-                                // Simplificação: registra o voto (em sistema real precisaria decifrar o voto do Baileys)
-                                // Para este MVP, vamos registrar que o usuário votou para controle de encerramento
                                 election.voters[voter] = true;
                                 saveElections(elections);
                             }
