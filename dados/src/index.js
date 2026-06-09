@@ -26207,24 +26207,16 @@ break;
           if (optName) results[optName] = 0;
         });
 
-        // Conta os votos (Suporta formato agregado do Baileys e o formato antigo)
-        if (Array.isArray(votes)) {
-          // Formato novo (Baileys getAggregateVotesInPoll)
-          votes.forEach(vote => {
-            if (results.hasOwnProperty(vote.name)) {
-              results[vote.name] = vote.voters.length;
-            }
-          });
-        } else {
-          // Formato antigo (Objeto por usuário)
-          Object.values(votes).forEach(userVotes => {
+        // Conta os votos (Formato universal por usuário)
+        Object.values(votes).forEach(userVotes => {
+          if (Array.isArray(userVotes)) {
             userVotes.forEach(optName => {
               if (results.hasOwnProperty(optName)) {
                 results[optName]++;
               }
             });
-          });
-        }
+          }
+        });
 
         const sortedResults = Object.entries(results).sort((a, b) => b[1] - a[1]);
         const maxVotes = sortedResults[0][1];
