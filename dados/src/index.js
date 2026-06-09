@@ -26180,6 +26180,24 @@ break;
         const arg = q.trim().split(' ');
         const subCmd = arg[0].toLowerCase();
 
+        if (subCmd === 'setkey') {
+          const newKey = arg[1];
+          if (!newKey) return reply(`❌ Uso correto: ${prefix}smm setkey [SUA_CHAVE_API]`);
+          
+          try {
+            let config = JSON.parse(fs.readFileSync(CONFIG_FILE));
+            config.smm_api_key = newKey;
+            writeJsonFile(CONFIG_FILE, config);
+            
+            // Atualiza a instância da API em tempo real
+            funcs.smmApi.apiKey = newKey;
+            
+            return reply(`✅ *API KEY ATUALIZADA*\n\nA chave da SMM foi configurada com sucesso e já está ativa!`);
+          } catch (e) {
+            return reply(`❌ Erro ao salvar a chave: ${e.message}`);
+          }
+        }
+
         if (subCmd === 'saldo') {
           try {
             const res = await funcs.smmApi.getBalance();
@@ -26257,7 +26275,8 @@ break;
         help += `💰 *${prefix}smm saldo* - Ver seu saldo no site\n`;
         help += `📋 *${prefix}smm servicos* - Listar serviços\n`;
         help += `📦 *${prefix}smm pedido [ID] [LINK] [QTD]* - Criar novo pedido\n`;
-        help += `📊 *${prefix}smm status [ID]* - Ver status de um pedido`;
+        help += `📊 *${prefix}smm status [ID]* - Ver status de um pedido\n`;
+        help += `🔑 *${prefix}smm setkey [CHAVE]* - Configurar sua API Key`;
         return reply(help);
       }
 
