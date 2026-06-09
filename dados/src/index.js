@@ -26212,21 +26212,44 @@ break;
           }
         }
 
-        if (subCmd === 'servicos') {
+        if (subCmd === 'servicos' || subCmd === 'categorias') {
           try {
             const res = await smmApi.getServices();
             if (Array.isArray(res)) {
-              let text = `📋 *SERVIÇOS DISPONÍVEIS*\n\n`;
-              res.slice(0, 20).forEach(s => {
-                text += `🆔 ID: ${s.service}\n📦 ${s.name}\n💰 Preço: ${s.rate} por 1000\n\n`;
+              const categories = [...new Set(res.map(s => s.category))];
+              let text = `📋 *CATEGORIAS SMM*\n\n`;
+              text += `Para ver os serviços, use: *${prefix}smm [nome_da_categoria]*\n\n`;
+              categories.forEach(cat => {
+                text += `📁 ${cat}\n`;
               });
-              text += `... (exibindo apenas os 20 primeiros)`;
               return reply(text);
             } else {
-              return reply(`❌ Erro ao buscar serviços.`);
+              return reply(`❌ Erro ao buscar categorias.`);
             }
           } catch (e) {
             return reply(`❌ Erro na API: ${e.message}`);
+          }
+        }
+
+        // Busca por categoria específica
+        if (q.trim().length > 4) {
+          try {
+            const res = await smmApi.getServices();
+            if (Array.isArray(res)) {
+              const categoryName = q.trim().toLowerCase();
+              const filtered = res.filter(s => s.category.toLowerCase().includes(categoryName));
+              
+              if (filtered.length > 0) {
+                let text = `📦 *SERVIÇOS: ${filtered[0].category.toUpperCase()}*\n\n`;
+                filtered.slice(0, 30).forEach(s => {
+                  text += `🆔 *ID:* ${s.service}\n📝 *Nome:* ${s.name}\n💰 *Preço:* ${s.rate} por 1000\n\n`;
+                });
+                if (filtered.length > 30) text += `... (exibindo apenas os 30 primeiros)`;
+                return reply(text);
+              }
+            }
+          } catch (e) {
+            console.error(e);
           }
         }
 
@@ -26274,7 +26297,8 @@ break;
 
         let help = `🤖 *COMANDOS SMM*\n\n`;
         help += `💰 *${prefix}smm saldo* - Ver seu saldo no site\n`;
-        help += `📋 *${prefix}smm servicos* - Listar serviços\n`;
+        help += `📋 *${prefix}smm servicos* - Ver categorias de serviços\n`;
+        help += `🔍 *${prefix}smm [NOME]* - Ver serviços de uma categoria\n`;
         help += `📦 *${prefix}smm pedido [ID] [LINK] [QTD]* - Criar novo pedido\n`;
         help += `📊 *${prefix}smm status [ID]* - Ver status de um pedido\n`;
         help += `🔑 *${prefix}smm setkey [CHAVE]* - Configurar sua API Key`;
