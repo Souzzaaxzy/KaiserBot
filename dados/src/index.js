@@ -26276,6 +26276,7 @@ break;
         }
 
         if (subCmd === 'pedido') {
+          // Captura os argumentos ignorando espaços extras
           const serviceId = arg[1];
           const link = arg[2];
           const quantity = arg[3];
@@ -26285,20 +26286,23 @@ break;
           }
 
           try {
+            // Garante que serviceId e quantity sejam números para a API
             const res = await smmApi.addOrder({
-              service: serviceId,
-              link: link,
-              quantity: quantity
+              service: parseInt(serviceId),
+              link: link.trim(),
+              quantity: parseInt(quantity)
             });
 
-            if (res.order) {
+            if (res && res.order) {
               return reply(`✅ *PEDIDO REALIZADO COM SUCESSO!*\n\n` +
                 `📦 *Serviço ID:* ${serviceId}\n` +
                 `🔢 *Quantidade:* ${quantity}\n` +
                 `🆔 *ID do Pedido:* ${res.order}\n\n` +
-                `💡 _Use ${prefix}smm status ${res.order} para acompanhar._`);
+                `📊 Status: Pendente\n` +
+                `💡 _Use ${prefix}smm status ${res.order} para acompanhar a atualização real._`);
             } else {
-              return reply(`❌ Erro no pedido: ${res.error || 'Erro desconhecido'}`);
+              const errorMsg = res.error || (res.errors ? JSON.stringify(res.errors) : 'Erro desconhecido');
+              return reply(`❌ Erro no pedido: ${errorMsg}`);
             }
           } catch (e) {
             return reply(`❌ Erro na API: ${e.message}`);
@@ -26310,14 +26314,34 @@ break;
           if (!orderId) return reply(`❌ Informe o ID do pedido.`);
 
           try {
-            const res = await smmApi.getStatus(orderId);
-            if (res.status) {
-              return reply(`📊 *STATUS DO PEDIDO*\n\n🆔 ID: ${orderId}\n📈 Status: ${res.status}\n📉 Início: ${res.start_count}\n⏳ Restante: ${res.remains}`);
+            // Força a limpeza de cache ou espera um pequeno delay se necessário (API SMM às vezes demora a processar)
+            const res = await smmApi.getStatus(orderId.trim());
+            
+            if (res && res.status) {
+              // Tradução amigável dos status
+              const statusMap = {
+                'Pending': '⏳ Pendente',
+                'In progress': '🔄 Em progresso',
+                'Completed': '✅ Concluído',
+                'Partial': '⚠️ Parcial',
+                'Canceled': '❌ Cancelado',
+                'Processing': '⚙️ Processando'
+              };
+              
+              const statusTraduzido = statusMap[res.status] || res.status;
+              const charge = res.charge ? `\n💰 Custo: R$ ${res.charge}` : '';
+              
+              return reply(`📊 *STATUS ATUALIZADO DO PEDIDO*\n\n` +
+                `🆔 ID: ${orderId}\n` +
+                `📈 Status: ${statusTraduzido}\n` +
+                `📉 Início: ${res.start_count || 0}\n` +
+                `⏳ Restante: ${res.remains || 0}${charge}\n\n` +
+                `📅 Consulta realizada em: ${new Date().toLocaleString('pt-BR')}`);
             } else {
-              return reply(`❌ Pedido não encontrado ou erro.`);
+              return reply(`❌ Pedido não encontrado ou ainda sendo processado pelo painel.`);
             }
           } catch (e) {
-            return reply(`❌ Erro na API: ${e.message}`);
+            return reply(`❌ Erro na API ao consultar status: ${e.message}`);
           }
         }
 
