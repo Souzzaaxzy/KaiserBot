@@ -26279,27 +26279,29 @@ break;
         }
 
         if (subCmd === 'pedido') {
-          const serviceId = arg[1];
+          // Limpa o ID de possíveis colchetes ou espaços
+          const serviceIdRaw = arg[1] ? arg[1].replace(/[\[\]]/g, '').trim() : '';
           const link = arg[2];
           const quantity = arg[3];
 
-          if (!serviceId || !link || !quantity) {
+          if (!serviceIdRaw || !link || !quantity) {
             return reply(`❌ Uso correto: ${prefix}smm pedido [ID_SERVICO] [LINK] [QUANTIDADE]`);
           }
 
           try {
             const services = await smmApi.getServices();
-            const service = services.find(s => s.service === serviceId);
+            // Busca o serviço aceitando tanto string quanto número
+            const service = services.find(s => String(s.service) === serviceIdRaw);
             
             if (!service) {
-              return reply(`❌ ID de serviço ${serviceId} não encontrado. Verifique o ID usando ${prefix}smm [nome].`);
+              return reply(`❌ ID de serviço ${serviceIdRaw} não encontrado. Verifique o ID usando ${prefix}smm [nome].`);
             }
 
             const totalCost = (parseFloat(service.rate) / 1000) * parseInt(quantity);
             
             // Salva o pedido pendente
             pendingSmmOrders.set(sender, {
-              service: parseInt(serviceId),
+              service: parseInt(serviceIdRaw),
               link: link.trim(),
               quantity: parseInt(quantity),
               name: service.name,
@@ -26309,7 +26311,7 @@ break;
 
             let msg = `📝 *RESUMO DO PEDIDO*\n\n`;
             msg += `📦 *Serviço:* ${service.name}\n`;
-            msg += `🆔 *ID:* ${serviceId}\n`;
+            msg += `🆔 *ID:* ${serviceIdRaw}\n`;
             msg += `🔗 *Link:* ${link}\n`;
             msg += `🔢 *Quantidade:* ${quantity}\n`;
             msg += `💸 *Valor Total:* R$ ${totalCost.toFixed(2)}\n\n`;
