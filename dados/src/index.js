@@ -26019,6 +26019,7 @@ packname: `${nomebot}`,            type: isVideo2 ? 'video' : 'image'
           participant = info.key.participant || menc_prt;
         }
         try {
+          // Apaga a mensagem marcada
           await nazu.sendMessage(from, {
             delete: {
               remoteJid: from,
@@ -26027,8 +26028,17 @@ packname: `${nomebot}`,            type: isVideo2 ? 'video' : 'image'
               participant: participant
             }
           });
+          // Apaga a própria mensagem do comando
+          await nazu.sendMessage(from, {
+            delete: {
+              remoteJid: from,
+              fromMe: true,
+              id: info.key.id,
+              participant: sender
+            }
+          });
         } catch (error) {
-          reply("ocorreu um erro 💔");
+          reply("ocorreu um erro ao apagar as mensagens 💔");
         }
         break;
       case 'blockuser':
