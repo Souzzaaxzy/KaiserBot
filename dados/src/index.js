@@ -22775,6 +22775,68 @@ ${prefix}setnvkey sua_chave_aqui
         }
         break;
 
+      case 'setgroq':
+      case 'setgrok':
+      case 'groqkey':
+        try {
+          if (!isOwnerOrSub) return reply("🚫 Este comando é exclusivo para o dono do bot!");
+
+          if (!q) {
+            const currentKey = process.env.GROQ_API_KEY || '';
+            const maskedKey = currentKey ? currentKey.substring(0, 8) + '...' + currentKey.substring(currentKey.length - 4) : 'Não configurada';
+            return reply(`🔑 *Configurar GROQ API Key (GRÁTIS)*
+
+Key atual: \`${maskedKey}\`
+
+📝 *Como obter sua key (gratuito):*
+1. Acesse: https://console.groq.com/
+2. Crie uma conta ou faça login
+3. Vá em API Keys > Create Key
+4. Copie sua chave
+
+💡 *Uso:*
+${prefix}setgroq sua_chave_aqui
+
+⚠️ Groq é gratuito com 30 req/min!`);
+
+          }
+
+          // Salvar no .env
+          const envPath = pathz.join(__dirname, '../../.env');
+          let envContent = '';
+          
+          if (fs.existsSync(envPath)) {
+            envContent = fs.readFileSync(envPath, 'utf-8');
+          }
+
+          // Substituir ou adicionar a linha GROQ_API_KEY
+          const keyLine = `GROQ_API_KEY=${q}`;
+          const keyRegex = /^GROQ_API_KEY=.*$/gm;
+          
+          if (keyRegex.test(envContent)) {
+            envContent = envContent.replace(keyRegex, keyLine);
+          } else {
+            envContent += envContent.endsWith('\n') ? keyLine : '\n' + keyLine;
+          }
+
+          fs.writeFileSync(envPath, envContent);
+
+          // Atualizar variável em memória
+          process.env.GROQ_API_KEY = q;
+
+          await reply(`✅ *GROQ API Key configurada com sucesso!*
+
+🔑 Key: \`${q.substring(0, 8)}...${q.substring(q.length - 4)}\`
+
+✅ *GRÁTIS!* Limite: 30 req/min
+⚠️ *Importante:* Para aplicar completamente, reinicie o bot com ${prefix}restart`);
+
+        } catch (e) {
+          console.error(e);
+          await reply("🐝 Ops! Ocorreu um erro inesperado. Tente novamente!");
+        }
+        break;
+
       case 'nomebot':
       case 'botname':
       case 'nome-bot':
