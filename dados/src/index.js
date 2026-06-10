@@ -40,6 +40,7 @@ import spotifyModule from './funcs/downloads/spotify.js';
 import captchaIndex, { initCaptchaIndex, addCaptcha, removeCaptcha, getCaptcha, hasPendingCaptcha } from './utils/captchaIndex.js';
 import CaptchaIndex from './utils/captchaIndex.js';
 import npcManager from './utils/npcManager.js';
+import nameReactions from './utils/nameReactions.js';
 import fsPromises from 'fs/promises';
 import {
   formatUptime,
@@ -4555,8 +4556,20 @@ if (  isGroup &&  groupData.antistickerplus &&  !isGroupAdmin &&  !isOwner &&  !
     }
     if (budy2.match(/^(\d+)d(\d+)$/)) reply(+budy2.match(/^(\d+)d(\d+)$/)[1] > 50 || +budy2.match(/^(\d+)d(\d+)$/)[2] > 100 ? "❌ Limite: max 50 dados e 100 lados" : "🎲 Rolando " + budy2.match(/^(\d+)d(\d+)$/)[1] + "d" + budy2.match(/^(\d+)d(\d+)$/)[2] + "...\n🎯 Resultados: " + (r = [...Array(+budy2.match(/^(\d+)d(\d+)$/)[1])].map(_ => 1 + Math.floor(Math.random() * +budy2.match(/^(\d+)d(\d+)$/)[2]))).join(", ") + "\n📊 Total: " + r.reduce((a, b) => a + b, 0));
 
-
-
+    // ═══════════════════════════════════════════════════════════════
+    // REAÇÃO POR NOME - Reagir automaticamente quando alguém menciona um nome
+    // ═══════════════════════════════════════════════════════════════
+    if (isGroup && !info.key.fromMe && !isCmd) {
+      const reaction = nameReactions.checkMessage(budy2);
+      if (reaction) {
+        try {
+          // Reagir com o emoji
+          await nazu.sendMessage(from, { react: { text: reaction.emoji, key: info.key } });
+        } catch (e) {
+          console.warn('[NameReactions] Erro ao reagir:', e.message);
+        }
+      }
+    }
 
     const _botShort = (nazu && nazu.user && (nazu.user.id || nazu.user.lid)) ? String((nazu.user.id || nazu.user.lid).split(':')[0]) : '';
     // Não processar pela assistente se a mensagem veio do PRO (evita loop infinito)
@@ -22707,6 +22720,97 @@ ${prefix}${command} 1a0b5879-bc22-4f4a
         } catch (e) {
           console.error(e);
           await reply("🐝 Ops! Ocorreu um erro inesperado. Tente novamente em alguns instantes, por favor! 🥺");
+        }
+        break;
+
+      // ═══════════════════════════════════════════════════════════════
+      // REAÇÕES POR NOME - Reagir automaticamente quando alguém menciona um nome
+      // ═══════════════════════════════════════════════════════════════
+      case 'reacao':
+      case 'reagir':
+        try {
+          if (!isOwnerOrSub) return reply("🚫 Este comando é exclusivo para o dono do bot!");
+
+          const args = q.trim().split(' ');
+          const subCmd = args[0]?.toLowerCase();
+
+          if (!subCmd || subCmd === 'menu' || subCmd === 'ajuda' || subCmd === 'help') {
+            const status = nameReactions.getStatus();
+            const reactions = nameReactions.list();
+            
+            let listText = '';
+            if (reactions.length > 0) {
+              listText = reactions.map(r => `• ${r.emoji} ${r.name}`).join('\n');
+            } else {
+              listText = 'Nenhuma reação configurada';
+            }
+
+            return reply(`👑 *Reações por Nome*
+
+📊 Status: ${status.enabled ? '✅ Ativado' : '❌ Desativado'}
+📝 Total: ${status.totalReactions} reação(ões)
+
+${listText}
+
+💡 *Comandos:*
+${prefix}reacao add <nome> <emoji> - Adicionar reação
+${prefix}reacao del <nome> - Remover reação
+${prefix}reacao toggle - Ativar/Desativar
+${prefix}reacao list - Ver todas
+
+📌 *Exemplo:*
+${prefix}reacao add leo 👑`);
+          }
+
+          if (subCmd === 'add' || subCmd === 'criar') {
+            const nome = args[1];
+            const emoji = args[2];
+            
+            if (!nome || !emoji) {
+              return reply(`❌ Uso: ${prefix}reacao add <nome> <emoji>\n\nExemplo: ${prefix}reacao add leo 👑`);
+            }
+            
+            if (nameReactions.add(nome, emoji)) {
+              return reply(`✅ *Reação adicionada!*\n\n${emoji} Quando alguém disser "${nome}", o bot reagirá!`);
+            } else {
+              return reply('❌ Erro ao adicionar reação.');
+            }
+          }
+
+          if (subCmd === 'del' || subCmd === 'remover' || subCmd === 'delete') {
+            const nome = args[1];
+            
+            if (!nome) {
+              return reply(`❌ Uso: ${prefix}reacao del <nome>\n\nExemplo: ${prefix}reacao del leo`);
+            }
+            
+            if (nameReactions.remove(nome)) {
+              return reply(`✅ Reação "${nome}" removida!`);
+            } else {
+              return reply(`❌ Reação "${nome}" não encontrada.`);
+            }
+          }
+
+          if (subCmd === 'toggle' || subCmd === 'on' || subCmd === 'off') {
+            const newStatus = nameReactions.toggle();
+            return reply(`✅ Sistema de reações ${newStatus ? 'ativado' : 'desativado'}!`);
+          }
+
+          if (subCmd === 'list' || subCmd === 'lista') {
+            const reactions = nameReactions.list();
+            if (reactions.length === 0) {
+              return reply('📝 Nenhuma reação configurada.\n\nUse: ' + prefix + 'reacao add <nome> <emoji>');
+            }
+            const listText = reactions.map(r => `${r.emoji} ${r.name}`).join('\n');
+            return reply(`👑 *Reações configuradas:*\n\n${listText}`);
+          }
+
+          // Se não reconhecido, mostra ajuda
+          return reply(`❌ Comando não reconhecido.\n\nUse: ${prefix}reacao para ver ajuda`);
+
+        } catch (e) {
+          console.error(e);
+          await reply("🐝 Ops! Ocorreu um erro inesperado!");
         }
         break;
 

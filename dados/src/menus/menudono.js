@@ -40,6 +40,15 @@ ${middleBorder}📝 Status: ${prefix}setgroq
 ${bottomBorder}
 
 ${menuTopBorder}
+│ 👑 REAÇÕES POR NOME
+${middleBorder}
+${middleBorder}${menuItemIcon}${prefix}reacao - Ver reações
+${middleBorder}${menuItemIcon}${prefix}reacao add <nome> <emoji>
+${middleBorder}${menuItemIcon}${prefix}reacao del <nome>
+${middleBorder}${menuItemIcon}${prefix}reacao toggle
+${bottomBorder}
+
+${menuTopBorder}
 │ ${botConfigMenuTitle}
 ${middleBorder}
 ${middleBorder}${menuItemIcon}${prefix}prefixo
