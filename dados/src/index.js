@@ -4353,7 +4353,7 @@ if (  isGroup &&  groupData.antistickerplus &&  !isGroupAdmin &&  !isOwner &&  !
         if (relationshipManager && relationshipManager.hasPendingRequest && relationshipManager.processResponse) {
           try {
             if (relationshipManager.hasPendingRequest(from) && body) {
-              const relResponse = relationshipManager.processResponse(from, sender, body);
+              const relResponse = await relationshipManager.processResponse(from, sender, body);
               if (relResponse) {
                 if (relResponse.success && relResponse.message) {
                   await nazu.sendMessage(from, {

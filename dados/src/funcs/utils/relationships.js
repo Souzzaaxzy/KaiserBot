@@ -308,7 +308,7 @@ class RelationshipManager {
 ⏳ Expira em ${this._formatDuration(REQUEST_TIMEOUT_MS)}.`;
   }
 
-  processResponse(groupId, responderId, rawResponse) {
+  async processResponse(groupId, responderId, rawResponse) {
     const pending = this.pendingRequests.get(groupId);
     if (!pending) return null;
 
@@ -341,7 +341,7 @@ class RelationshipManager {
       };
     }
 
-    return this._applyRequest(pending);
+    return await this._applyRequest(pending);
   }
 
   _normalizeDecision(rawResponse) {
@@ -357,7 +357,7 @@ class RelationshipManager {
     return null;
   }
 
-  _applyRequest(request) {
+  async _applyRequest(request) {
     const data = this._loadData();
     const key = this._getPairKey(request.requesterRaw, request.targetRaw);
     if (!key) {
