@@ -266,9 +266,15 @@ Use tom jornalístico mas descontraído.`;
         return content.trim();
       }
     } catch (e) {
-      console.error('[NPC] Erro ao gerar jornal:', e.message);
+      // Só mostra warning uma vez por sessão para não poluir o terminal
+      if (!this._jornalErrorShown) {
+        this._jornalErrorShown = true;
+        console.warn('[NPC] ⚠️ Jornal desativado - API NVIDIA indisponível (404)');
+      }
     }
 
+    // Desativa jornal automaticamente se API falhar
+    this.config.jornalEnabled = false;
     return null;
   }
 
