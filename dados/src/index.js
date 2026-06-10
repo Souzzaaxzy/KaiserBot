@@ -26108,6 +26108,78 @@ packname: `${nomebot}`,            type: isVideo2 ? 'video' : 'image'
           reply("ocorreu um erro ao apagar as mensagens 💔");
         }
         break;
+
+      case 'db':
+        try {
+          if (!isGroup) return reply("Este comando só funciona em grupos!");
+          
+          // Verificar se é admin, moderador ou alpha
+          const userRole = groupData?.usuarios?.[senderNormalized]?.funcao || groupData?.usuarios?.[sender]?.funcao;
+          const isModerator = userRole === 'moderador' || userRole === 'admin';
+          const isAlpha = sender === numerodono || isSubdono;
+          const isAdmin = isGroupAdmin;
+          
+          if (!isAdmin && !isModerator && !isAlpha) {
+            return reply("🚫 Você não tem permissão para usar este comando!");
+          }
+          
+          if (!menc_prt) return reply("Marque a mensagem da pessoa que deseja banir.");
+          
+          let dbStanzaId, dbParticipant;
+          if (info.message.extendedTextMessage) {
+            dbStanzaId = info.message.extendedTextMessage.contextInfo.stanzaId;
+            dbParticipant = info.message.extendedTextMessage.contextInfo.participant || menc_prt;
+          } else if (info.message.viewOnceMessage) {
+            dbStanzaId = info.key.id;
+            dbParticipant = info.key.participant || menc_prt;
+          }
+          
+          if (!dbParticipant) return reply("Não consegui identificar o usuário.");
+          
+          // Verificar se não está tentando banir admin/dono
+          const targetRole = groupData?.usuarios?.[normalizeUserId(dbParticipant)]?.funcao;
+          const targetIsAdmin = groupMetadata?.participants?.find(p => p.id === dbParticipant)?.admin;
+          
+          if (targetIsAdmin || targetRole === 'admin') {
+            return reply("⚠️ Não posso banir um administrador!");
+          }
+          
+          if (dbParticipant === numerodono || isSubdono(dbParticipant)) {
+            return reply("⚠️ Não posso banir o dono ou sub-dono!");
+          }
+          
+          if (!isBotAdmin) {
+            return reply("⚠️ Preciso ser administrador para banir membros!");
+          }
+          
+          // Apagar a mensagem marcada
+          await nazu.sendMessage(from, {
+            delete: {
+              remoteJid: from,
+              fromMe: false,
+              id: dbStanzaId,
+              participant: dbParticipant
+            }
+          });
+          
+          // Banir o usuário
+          await nazu.groupParticipantsUpdate(from, [dbParticipant], 'remove');
+          
+          // Apagar a própria mensagem do comando
+          await nazu.sendMessage(from, {
+            delete: {
+              remoteJid: from,
+              fromMe: true,
+              id: info.key.id,
+              participant: sender
+            }
+          });
+          
+        } catch (error) {
+          console.error('Erro no comando db:', error);
+          reply("ocorreu um erro 💔");
+        }
+        break;
       case 'blockuser':
         if (!isGroup) return sendKaiserWarning("Este comando só pode ser usado em grupos.");
         if (!isGroupAdmin) return reply("você precisa ser adm 💔");
