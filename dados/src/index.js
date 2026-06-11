@@ -298,10 +298,12 @@ const formatAIResponse = (text) => {
 };
 
 // ═══════════════════════════════════════════════════════════════
-// 🎵 LAYOUT DO PLAYER DE MÚSICA
+// 🎵 LAYOUT DO PLAYER DE MÚSICA (Sincronizado com capa)
 // ═══════════════════════════════════════════════════════════════
 const formatMusicPlayer = (title, artist, duration = null, progress = null, volume = null) => {
-  const maxWidth = 43;
+  // Ajustado para ficar proporcional à largura da imagem (~500-600px)
+  const maxWidth = 52;
+  const padding = '                                        '; // 40 espaços para alinhamento
   
   // Função para criar linha de progresso
   const createProgressBar = (progressPercent) => {
@@ -321,7 +323,7 @@ const formatMusicPlayer = (title, artist, duration = null, progress = null, volu
   const safeTitle = title || 'Música desconhecida';
   const safeArtist = artist || 'Artista desconhecido';
   
-  const titleDisplay = truncate(safeTitle, maxWidth - 6);
+  const titleDisplay = truncate(safeTitle, maxWidth);
   const artistDisplay = truncate(safeArtist, maxWidth);
   
   let progressBar = '';
@@ -347,30 +349,48 @@ const formatMusicPlayer = (title, artist, duration = null, progress = null, volu
     timeDisplay = `${currentStr} ${progressBar} ${remainingStr}`;
   }
   
-  // Layout do player
-  let player = `├─────────────────────────────────────────┤\n`;
-  player += `│ iPhone                                   │\n`;
-  player += `│                                          │\n`;
-  player += `│ ${titleDisplay}                        🅴  │\n`;
-  player += `│ ${artistDisplay}                       │\n`;
-  player += `│                                          │\n`;
+  // Layout do player - proporcional à imagem
+  const innerWidth = maxWidth; // 52 caracteres de conteúdo
+  
+  // Helper para criar linha com espaçamento dinâmico
+  const line = (content, rightAlign = '') => {
+    const spaces = innerWidth - content.length - rightAlign.length;
+    return `│ ${content}${' '.repeat(Math.max(0, spaces))}${rightAlign} │\n`;
+  };
+  
+  let player = `├${'─'.repeat(innerWidth + 2)}┤\n`;
+  player += line('iPhone', '🅴');
+  player += line('');
+  
+  // Título
+  player += line(titleDisplay);
+  
+  // Artista
+  player += line(artistDisplay);
+  
+  player += line('');
   
   if (timeDisplay) {
-    player += `│ ${timeDisplay} │\n`;
-    player += `│                                          │\n`;
+    player += line(timeDisplay);
+    player += line('');
   }
   
-  player += `│            ◀◀      ❚❚      ▶▶               │\n`;
-  player += `│                                        ◉     │\n`;
-  player += `│                                          │\n`;
+  // Controles centralizados
+  const controls = '◀◀      ❚❚      ▶▶';
+  const ctrlSpaces = Math.max(0, Math.floor((innerWidth - controls.length) / 2));
+  player += `│${' '.repeat(ctrlSpaces)}${controls}${' '.repeat(innerWidth - ctrlSpaces - controls.length)}│\n`;
+  player += `│${' '.repeat(innerWidth - 3)}◉     │\n`;
+  player += line('');
   
+  // Volume
   if (volume !== null) {
     const volBar = createProgressBar(volume);
-    player += `│ 🔊 ${volBar} 🔊            │\n`;
-    player += `│                                          │\n`;
+    const volText = `🔊 ${volBar} 🔊`;
+    player += line(volText);
+    player += line('');
   }
   
-  player += `╰─────────────────────────────────────────╯`;
+  player += `╰${'─'.repeat(innerWidth + 2)}╯`;
   
   return player;
 };
