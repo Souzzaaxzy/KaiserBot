@@ -298,11 +298,11 @@ const formatAIResponse = (text) => {
 };
 
 // ═══════════════════════════════════════════════════════════════
-// 🎵 LAYOUT DO PLAYER DE MÚSICA (Exatamente como a imagem)
+// 🎵 LAYOUT DO PLAYER DE MÚSICA (Sincronizado com imagem)
 // ═══════════════════════════════════════════════════════════════
 const formatMusicPlayer = (title, artist, duration = null, progress = null, volume = null) => {
-  // Largura do player
-  const maxWidth = 44;
+  // Largura proporcional à imagem (~500-600px = ~55-60 caracteres)
+  const maxWidth = 58;
   
   // Função para criar linha de progresso
   const createProgressBar = (progressPercent) => {
@@ -343,8 +343,8 @@ const formatMusicPlayer = (title, artist, duration = null, progress = null, volu
   };
   
   const lineWithEmoji = (content, emoji) => {
-    const spaces = innerWidth - content.length - 1;
-    return `│ ${content}${' '.repeat(Math.max(0, spaces))}${emoji} │\n`;
+    const spaces = innerWidth - content.length - 2;
+    return `│ ${content}${' '.repeat(Math.max(1, spaces))} ${emoji} │\n`;
   };
   
   let player = `├${'─'.repeat(innerWidth + 2)}┤\n`;
