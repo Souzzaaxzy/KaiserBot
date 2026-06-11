@@ -101,8 +101,8 @@ ${menuTopBorder}
 ${middleBorder}
 ${middleBorder}  Atual: ${providerName}
 ${middleBorder}
-${middleBorder}${menuItemIcon}${prefix}select vex
-${middleBorder}${menuItemIcon}${prefix}select yt
+${middleBorder}📍${prefix}select vex
+${middleBorder}📍${prefix}select yt
 ${bottomBorder}
 
 ${menuTopBorder}
