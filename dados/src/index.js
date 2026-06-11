@@ -298,10 +298,10 @@ const formatAIResponse = (text) => {
 };
 
 // ═══════════════════════════════════════════════════════════════
-// 🎵 LAYOUT DO PLAYER DE MÚSICA
+// 🎵 LAYOUT DO PLAYER DE MÚSICA (Ajustado para imagem)
 // ═══════════════════════════════════════════════════════════════
 const formatMusicPlayer = (title, artist, duration = null, progress = null, volume = null) => {
-  const maxWidth = 56;
+  const maxWidth = 42;  // Tamanho que se encaixa na imagem
   
   const createProgressBar = (progressPercent) => {
     const filled = Math.round((progressPercent / 100) * maxWidth);
@@ -315,8 +315,8 @@ const formatMusicPlayer = (title, artist, duration = null, progress = null, volu
     return text.substring(0, maxLen - 3) + '...';
   };
   
-  const safeTitle = title || 'Música desconhecida';
-  const safeArtist = artist || 'Artista desconhecido';
+  const safeTitle = title || 'Música';
+  const safeArtist = artist || 'Artista';
   
   const titleDisplay = truncate(safeTitle, maxWidth - 3);
   const artistDisplay = truncate(safeArtist, maxWidth);
@@ -331,21 +331,21 @@ const formatMusicPlayer = (title, artist, duration = null, progress = null, volu
   let player = `├${'─'.repeat(innerWidth + 2)}┤\n`;
   player += `│ ${pad('iPhone', innerWidth)} │\n`;
   player += line('');
-  player += `│ ${titleDisplay} 🅴 │\n`;  // Emoji ao lado do título
+  player += `│ ${titleDisplay} 🅴 │\n`;
   player += line(artistDisplay);
   player += line('');
   player += `│ ${progressBarStr} │\n`;
   player += line('');
   
   // Botões centralizados
-  const controls = '◀◀      ❚❚      ▶▶';
+  const controls = '◀◀    ❚❚    ▶▶';
   const ctrlSpaces = Math.floor((innerWidth - controls.length) / 2);
   player += `│${' '.repeat(ctrlSpaces)}${controls}${' '.repeat(innerWidth - ctrlSpaces - controls.length)}│\n`;
-  player += `│${' '.repeat(innerWidth - 3)}◉     │\n`;
+  player += `│${' '.repeat(innerWidth - 3)}◉   │\n`;
   player += line('');
   
   if (volume !== null) {
-    player += `│ 🔊 ${volumeBarStr} 🔊     │\n`;
+    player += `│ 🔊 ${volumeBarStr} 🔊 │\n`;
     player += line('');
   }
   
