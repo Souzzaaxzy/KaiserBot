@@ -342,7 +342,7 @@ const formatMusicPlayer = (title, artist, duration = null, progress = null, volu
   const innerWidth = maxWidth;
   const pad = (str, len) => str + ' '.repeat(Math.max(0, len - str.length));
   const line = (content) => ` ${pad(content, innerWidth)} \n`;
-  const spacer = () => `                     ${' '.repeat(innerWidth + 2)} \n`;
+  const spacer = () => ` ${' '.repeat(innerWidth + 2)}                     \n`;
   
   let player = ` ${'-'.repeat(innerWidth + 2)} \n`;
   player += ` ${pad('iPhone', innerWidth)} \n`;
