@@ -32297,7 +32297,7 @@ ${nivelSorte >= 70 ? '🎉 Hoje é seu dia de sorte!' : nivelSorte >= 40 ? '🤔
           }
           
           // Enviar para transcrição
-          const FormData = require('form-data');
+          const { default: FormData } = await import('form-data');
           const form = new FormData();
           form.append('file', Buffer.from(audioBuffer), { filename: 'audio.mp3', contentType: 'audio/mpeg' });
           form.append('model', 'whisper-large-v3');
