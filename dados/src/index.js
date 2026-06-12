@@ -4546,6 +4546,11 @@ if (  isGroup &&  groupData.antistickerplus &&  !isGroupAdmin &&  !isOwner &&  !
           });
         }
 
+        // Responder quando alguém manda só "prefixo" no chat
+        if (isGroup && !isCmd && budy2 && budy2.trim().toLowerCase() === 'prefixo') {
+          await reply(`Olá! Esse é o meu prefixo atual: *${prefix}*\n\nUse ele antes de qualquer comando! 😊`);
+        }
+
         if (isGroup && antipalavra && body && !isCmd) {
           try {
             if (!antipalavra.isActive(from)) {
@@ -22682,14 +22687,6 @@ case 'addcmd-subdono':
         } catch (e) {
           console.error(e);
           await reply("❌ Ocorreu um erro interno. Tente novamente em alguns minutos.");
-        }
-        break;
-      case 'verprefixo':
-        try {
-          return reply(`Olá! Esse é o meu prefixo atual: *${prefix}*\n\nUse ele antes de qualquer comando! 😊`);
-        } catch (e) {
-          console.error(e);
-          reply("ocorreu um erro 💔");
         }
         break;
       case 'prefixo':
