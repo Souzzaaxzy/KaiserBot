@@ -358,8 +358,8 @@ const formatMusicPlayer = (title, artist, duration = null, progress = null, volu
   // Linha 4: Barra de progresso (5 caracteres mais curta)
   player += ` ${line(progressBar)}\n`;
   
-  // Linha 5: Controles (5 espaços extras à esquerda)
-  const controls = '     ⇆  ◁  ❚❚  ▷  ↻';
+  // Linha 5: Controles (25 espaços antes e depois)
+  const controls = '                         ⇆  ◁  ❚❚  ▷  ↻                         ';
   player += ` ${line(controls)}`;
   
   // Linha 6: Barra de volume
