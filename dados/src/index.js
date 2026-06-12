@@ -22684,6 +22684,14 @@ case 'addcmd-subdono':
           await reply("❌ Ocorreu um erro interno. Tente novamente em alguns minutos.");
         }
         break;
+      case 'verprefixo':
+        try {
+          return reply(`Olá! Esse é o meu prefixo atual: *${prefix}*\n\nUse ele antes de qualquer comando! 😊`);
+        } catch (e) {
+          console.error(e);
+          reply("ocorreu um erro 💔");
+        }
+        break;
       case 'prefixo':
       case 'prefix':
         try {
@@ -32227,14 +32235,6 @@ ${nivelSorte >= 70 ? '🎉 Hoje é seu dia de sorte!' : nivelSorte >= 40 ? '🤔
             text: msg + membros.map(m => `➤ @${getUserName(m)}`).join('\n'),
             mentions: membros
           });
-        } catch (e) {
-          console.error(e);
-          reply("ocorreu um erro 💔");
-        }
-        break;
-      case 'prefixo':
-        try {
-          return reply(`Olá! Esse é o meu prefixo atual: *${prefix}*\n\nUse ele antes de qualquer comando! 😊`);
         } catch (e) {
           console.error(e);
           reply("ocorreu um erro 💔");
