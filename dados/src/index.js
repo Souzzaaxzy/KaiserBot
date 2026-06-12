@@ -4635,10 +4635,10 @@ if (  isGroup &&  groupData.antistickerplus &&  !isGroupAdmin &&  !isOwner &&  !
     if (budy2.match(/^(\d+)d(\d+)$/)) reply(+budy2.match(/^(\d+)d(\d+)$/)[1] > 50 || +budy2.match(/^(\d+)d(\d+)$/)[2] > 100 ? "❌ Limite: max 50 dados e 100 lados" : "🎲 Rolando " + budy2.match(/^(\d+)d(\d+)$/)[1] + "d" + budy2.match(/^(\d+)d(\d+)$/)[2] + "...\n🎯 Resultados: " + (r = [...Array(+budy2.match(/^(\d+)d(\d+)$/)[1])].map(_ => 1 + Math.floor(Math.random() * +budy2.match(/^(\d+)d(\d+)$/)[2]))).join(", ") + "\n📊 Total: " + r.reduce((a, b) => a + b, 0));
 
     // ═══════════════════════════════════════════════════════════════
-    // REAÇÃO POR NOME - Reagir automaticamente quando alguém menciona um nome
+    // REAÇÃO POR NOME - Reagir automaticamente quando alguém menciona um nome (POR GRUPO)
     // ═══════════════════════════════════════════════════════════════
     if (isGroup && !info.key.fromMe && !isCmd) {
-      const reaction = nameReactions.checkMessage(budy2);
+      const reaction = nameReactions.checkMessage(budy2, from);
       if (reaction) {
         try {
           // Reagir com o emoji
@@ -22883,26 +22883,27 @@ ${prefix}${command} 1a0b5879-bc22-4f4a
         break;
 
       // ═══════════════════════════════════════════════════════════════
-      // REAÇÕES POR NOME - Reagir automaticamente quando alguém menciona um nome
+      // REAÇÕES POR NOME - Reagir automaticamente quando alguém menciona um nome (POR GRUPO)
       // ═══════════════════════════════════════════════════════════════
       case 'reacao':
       case 'reagir':
         try {
-          if (!isOwnerOrSub) return reply("🚫 Este comando é exclusivo para o dono do bot!");
+          if (!isGroup) return reply("Este comando só pode ser usado em grupos 💔");
+          if (!isGroupAdmin) return reply("Apenas administradores podem usar este comando. 💔");
 
           const args = q.trim().split(' ');
           const subCmd = args[0]?.toLowerCase();
           
           // !reacao - ver lista
           if (!subCmd) {
-            const status = nameReactions.getStatus();
-            const reactions = nameReactions.list();
+            const status = nameReactions.getStatus(from);
+            const reactions = nameReactions.list(from);
             
             let listText = '';
             if (reactions.length > 0) {
               listText = reactions.map(r => `${r.emoji} ${r.name}`).join('\n');
             } else {
-              listText = 'Nenhuma reação configurada';
+              listText = 'Nenhuma reação configurada neste grupo';
             }
 
             return reply(`👑 *Reações por Nome*
@@ -22922,8 +22923,8 @@ ${prefix}reacao toggle - Ativar/Desativar
 
           // !reacao toggle
           if (subCmd === 'toggle' || subCmd === 'on' || subCmd === 'off') {
-            const newStatus = nameReactions.toggle();
-            return reply(`✅ Sistema de reações ${newStatus ? 'ativado' : 'desativado'}!`);
+            const newStatus = nameReactions.toggle(from);
+            return reply(`✅ Sistema de reações ${newStatus ? 'ativado' : 'desativado'} neste grupo!`);
           }
 
           // !reacao add <nome> <emoji>
@@ -22935,8 +22936,8 @@ ${prefix}reacao toggle - Ativar/Desativar
               return reply(`❌ Uso: ${prefix}reacao add <nome> <emoji>\n\n📌 Exemplo: ${prefix}reacao add leo 👑`);
             }
             
-            if (nameReactions.add(nome, emoji)) {
-              return reply(`✅ *Reação adicionada!*\n\n${emoji} Quando alguém disser "${nome}" (ou variações), o bot reagirá!`);
+            if (nameReactions.add(from, nome, emoji)) {
+              return reply(`✅ *Reação adicionada!*\n\n${emoji} Quando alguém disser "${nome}" (ou variações), o bot reagirá neste grupo!`);
             } else {
               return reply('❌ Erro ao adicionar reação.');
             }
@@ -22950,8 +22951,8 @@ ${prefix}reacao toggle - Ativar/Desativar
               return reply(`❌ Uso: ${prefix}reacao excluir <nome>\n\n📌 Exemplo: ${prefix}reacao excluir leo`);
             }
             
-            if (nameReactions.remove(nome)) {
-              return reply(`✅ Reação "${nome}" removida!`);
+            if (nameReactions.remove(from, nome)) {
+              return reply(`✅ Reação "${nome}" removida deste grupo!`);
             } else {
               return reply(`❌ Reação "${nome}" não encontrada.`);
             }
@@ -30349,47 +30350,56 @@ case 'assistent':
         }
         break;
       // ═══════════════════════════════════════════════════════════════
-      // 🤖 SISTEMA DE NPCs
+      // 🤖 SISTEMA DE NPCs (POR GRUPO)
       // ═══════════════════════════════════════════════════════════════
       case 'npc':
         try {
+          if (!isGroup) return reply("Este comando só pode ser usado em grupos 💔");
           if (!isGroupAdmin) return reply("Apenas administradores podem usar este comando. 💔");
 
           const subCmd = args[0]?.toLowerCase();
           const value = args[1];
 
           if (!subCmd || subCmd === 'status') {
-            const status = npcManager.getStatus();
-            return reply(`🤖 *STATUS DOS NPCs*\n\n` +
+            const status = npcManager.getStatus(from);
+            return reply(`🤖 *STATUS DOS NPCs* (neste grupo)\n\n` +
               `• Ativo: ${status.ativo ? '✅ Sim' : '❌ Não'}\n` +
               `• Cooldown: ${status.cooldown}\n` +
+              `• Chance: ${status.chance}\n` +
               `• Jornal: ${status.jornal}\n` +
               `• Eventos registrados: ${status.eventosRegistrados}`);
           }
 
           switch (subCmd) {
             case 'on':
-              return reply(`✅ ${npcManager.toggle(true)}`);
+              return reply(`✅ ${npcManager.toggle(true, from)}`);
 
             case 'off':
-              return reply(`❌ ${npcManager.toggle(false)}`);
+              return reply(`❌ ${npcManager.toggle(false, from)}`);
 
             case 'cooldown':
               if (!value || isNaN(parseInt(value))) {
                 return reply(`📝 Uso: ${prefix}npc cooldown <segundos>\nExemplo: ${prefix}npc cooldown 30`);
               }
-              return reply(`⏱️ ${npcManager.setCooldown(parseInt(value))}`);
+              return reply(`⏱️ ${npcManager.setCooldown(parseInt(value), from)}`);
+
+            case 'chance':
+              if (!value || isNaN(parseInt(value))) {
+                return reply(`📝 Uso: ${prefix}npc chance <porcentagem>\nExemplo: ${prefix}npc chance 50`);
+              }
+              return reply(`🎯 ${npcManager.setResponseChance(parseInt(value) / 100, from)}`);
 
             case 'jornal':
-              if (value === 'on') return reply(`📰 ${npcManager.toggleJornal(true)}`);
-              if (value === 'off') return reply(`📰 ${npcManager.toggleJornal(false)}`);
+              if (value === 'on') return reply(`📰 ${npcManager.toggleJornal(true, from)}`);
+              if (value === 'off') return reply(`📰 ${npcManager.toggleJornal(false, from)}`);
               return reply(`📝 Uso: ${prefix}npc jornal on/off`);
 
             case 'config':
-              const st = npcManager.getStatus();
-              return reply(`⚙️ *CONFIGURAÇÃO DOS NPCs*\n\n` +
+              const st = npcManager.getStatus(from);
+              return reply(`⚙️ *CONFIGURAÇÃO DOS NPCs* (neste grupo)\n\n` +
                 `• Sistema: ${st.ativo ? 'Ativado' : 'Desativado'}\n` +
                 `• Intervalo entre falas: ${st.cooldown}\n` +
+                `• Chance de resposta: ${st.chance}\n` +
                 `• Kaiser News: ${st.jornal}\n` +
                 `• Total de eventos: ${st.eventosRegistrados}`);
 
@@ -30398,6 +30408,7 @@ case 'assistent':
                 `• ${prefix}npc on/off - Ativar/desativar\n` +
                 `• ${prefix}npc status - Ver status\n` +
                 `• ${prefix}npc cooldown <seg> - Intervalo\n` +
+                `• ${prefix}npc chance <%> - Chance de resposta\n` +
                 `• ${prefix}npc jornal on/off - Jornal diário\n` +
                 `• ${prefix}npc config - Ver configurações`);
           }

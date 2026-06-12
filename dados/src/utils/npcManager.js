@@ -1,11 +1,16 @@
 // ═══════════════════════════════════════════════════════════════
-// 🤖 SISTEMA DE NPCs - 10 FRASES POR EVENTO (TOTAL: 240 frases)
+// 🤖 SISTEMA DE NPCs - POR GRUPO (10 FRASES POR EVENTO)
 // ═══════════════════════════════════════════════════════════════
 import { NPC_PERSONALITIES } from './npcPersonalities.js';
 import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const GRUPOS_DIR = path.join(__dirname, '../../database/grupos');
+
+// Arquivos globais (mantidos para memória e eventos)
 const DATABASE_DIR = './dados';
-const NPC_CONFIG_FILE = `${DATABASE_DIR}/npc_config.json`;
 const NPC_MEMORY_FILE = `${DATABASE_DIR}/npc_memory.json`;
 const NPC_EVENTS_FILE = `${DATABASE_DIR}/npc_events.json`;
 
@@ -458,23 +463,29 @@ const DEFAULT_CONFIG = {
   personalities: NPC_PERSONALITIES
 };
 
-// ═══════════════════════════════════════════════════════════════
-// 💾 FUNÇÕES DE PERSISTÊNCIA
-// ═══════════════════════════════════════════════════════════════
-const loadConfig = () => {
+// Carregar configuração do grupo
+const loadGroupConfig = (groupId) => {
   try {
-    if (fs.existsSync(NPC_CONFIG_FILE)) {
-      const data = fs.readFileSync(NPC_CONFIG_FILE, 'utf-8');
-      return { ...DEFAULT_CONFIG, ...JSON.parse(data) };
+    const groupFilePath = path.join(GRUPOS_DIR, `${groupId}.json`);
+    if (fs.existsSync(groupFilePath)) {
+      const data = JSON.parse(fs.readFileSync(groupFilePath, 'utf-8'));
+      return { ...DEFAULT_CONFIG, ...data.npcConfig };
     }
-  } catch (e) { console.error('[NPC] Erro ao carregar config:', e.message); }
+  } catch (e) { console.error('[NPC] Erro ao carregar config do grupo:', e.message); }
   return { ...DEFAULT_CONFIG };
 };
 
-const saveConfig = (config) => {
+// Salvar configuração do grupo
+const saveGroupConfig = (groupId, config) => {
   try {
-    fs.writeFileSync(NPC_CONFIG_FILE, JSON.stringify(config, null, 2));
-  } catch (e) { console.error('[NPC] Erro ao salvar config:', e.message); }
+    if (!fs.existsSync(GRUPOS_DIR)) {
+      fs.mkdirSync(GRUPOS_DIR, { recursive: true });
+    }
+    const groupFilePath = path.join(GRUPOS_DIR, `${groupId}.json`);
+    const currentData = fs.existsSync(groupFilePath) ? JSON.parse(fs.readFileSync(groupFilePath, 'utf-8')) : {};
+    currentData.npcConfig = config;
+    fs.writeFileSync(groupFilePath, JSON.stringify(currentData, null, 2));
+  } catch (e) { console.error('[NPC] Erro ao salvar config do grupo:', e.message); }
 };
 
 const loadMemory = () => {
@@ -512,40 +523,51 @@ const saveEvents = (events) => {
 // ═══════════════════════════════════════════════════════════════
 class NPCManager {
   constructor() {
-    this.config = loadConfig();
     this.memory = loadMemory();
     this.events = loadEvents();
     this.cooldowns = new Map();
     this.eventCounts = {};
     this.lastMinuteEvents = [];
-    
-    Object.keys(ALL_EVENTS).forEach(id => {
-      this.cooldowns.set(id, 0);
-    });
-    
-    if (this.config.jornalEnabled) {
-      this.initJornal();
-    }
   }
 
-  isEnabled() { return this.config.enabled; }
-  isAutoRespond() { return this.config.autoRespond !== false; }
+  // Obter config do grupo
+  getConfig(groupId) {
+    return loadGroupConfig(groupId);
+  }
 
-  canSpeak(npcId = 'kaiser') {
+  // Salvar config do grupo
+  saveConfig(groupId, config) {
+    saveGroupConfig(groupId, config);
+  }
+
+  isEnabled(groupId) { 
+    return this.getConfig(groupId).enabled; 
+  }
+  
+  isAutoRespond(groupId) { 
+    return this.getConfig(groupId).autoRespond !== false; 
+  }
+
+  canSpeak(npcId = 'kaiser', groupId) {
     const now = Date.now();
-    const lastTime = this.cooldowns.get(npcId) || 0;
-    return (now - lastTime) >= this.config.cooldown;
+    const key = `${groupId || 'global'}_${npcId}`;
+    const lastTime = this.cooldowns.get(key) || 0;
+    return (now - lastTime) >= this.getConfig(groupId).cooldown;
   }
 
-  markSpoken(npcId = 'kaiser') {
-    this.cooldowns.set(npcId, Date.now());
+  markSpoken(npcId = 'kaiser', groupId) {
+    const key = `${groupId || 'global'}_${npcId}`;
+    this.cooldowns.set(key, Date.now());
   }
 
-  canTrigger() {
+  canTrigger(groupId) {
     const now = Date.now();
+    const config = this.getConfig(groupId);
+    const key = `${groupId || 'global'}_events`;
+    
     this.lastMinuteEvents = this.lastMinuteEvents.filter(t => now - t < 60000);
     
-    if (this.lastMinuteEvents.length >= this.config.maxEventsPerMinute) {
+    if (this.lastMinuteEvents.length >= config.maxEventsPerMinute) {
       return false;
     }
     
@@ -553,14 +575,15 @@ class NPCManager {
     return true;
   }
 
-  async trigger(nazu, from, eventType, userId, userName, eventData = {}) {
-    if (!this.isEnabled()) return null;
-    if (!this.canTrigger()) return null;
+  async trigger(nazu, from, eventType, userId, userName, eventData = {}, groupId) {
+    if (!this.isEnabled(groupId)) return null;
+    if (!this.canTrigger(groupId)) return null;
     
-    if (Math.random() > this.config.responseChance) return null;
+    const config = this.getConfig(groupId);
+    if (Math.random() > config.responseChance) return null;
     
     const npcId = 'kaiser';
-    if (!this.canSpeak(npcId)) return null;
+    if (!this.canSpeak(npcId, groupId)) return null;
 
     const replacements = {
       user: userName || userId.split('@')[0],
@@ -581,25 +604,25 @@ class NPCManager {
     let response = this.generateResponse(eventType, replacements);
 
     if (response) {
-      this.markSpoken(npcId);
+      this.markSpoken(npcId, groupId);
       
       this.memory.recentNPCMessages = this.memory.recentNPCMessages || [];
-      this.memory.recentNPCMessages.push({ type: eventType, userId, time: Date.now() });
+      this.memory.recentNPCMessages.push({ type: eventType, userId, groupId, time: Date.now() });
       if (this.memory.recentNPCMessages.length > 50) {
         this.memory.recentNPCMessages = this.memory.recentNPCMessages.slice(-50);
       }
       
       this.memory.recentEvents = this.memory.recentEvents || [];
-      this.memory.recentEvents.push({ type: eventType, userId, userName, description: response, time: Date.now(), data: eventData });
+      this.memory.recentEvents.push({ type: eventType, userId, userName, groupId, description: response, time: Date.now(), data: eventData });
       if (this.memory.recentEvents.length > 100) {
         this.memory.recentEvents = this.memory.recentEvents.slice(-100);
       }
       
       saveMemory(this.memory);
       
-      if (this.config.logAllEvents) {
+      if (config.logAllEvents) {
         this.events.allEvents = this.events.allEvents || [];
-        this.events.allEvents.push({ type: eventType, userId, userName, time: Date.now() });
+        this.events.allEvents.push({ type: eventType, userId, userName, groupId, time: Date.now() });
         if (this.events.allEvents.length > 500) {
           this.events.allEvents = this.events.allEvents.slice(-500);
         }
@@ -608,7 +631,7 @@ class NPCManager {
 
       try {
         await nazu.sendMessage(from, { text: response });
-        console.log(`[NPC] ${npcId}: ${response.substring(0, 50)}...`);
+        console.log(`[NPC] ${npcId} no grupo ${groupId?.substring(0, 15)}...: ${response.substring(0, 50)}...`);
         return response;
       } catch (e) {
         console.error('[NPC] Erro ao enviar:', e.message);
@@ -618,9 +641,9 @@ class NPCManager {
     return null;
   }
 
-  async triggerFromSystem(nazu, from, eventType, userId, description, metadata = {}) {
+  async triggerFromSystem(nazu, from, eventType, userId, description, metadata = {}, groupId) {
     const userName = metadata.userName || userId.split('@')[0];
-    return await this.trigger(nazu, from, eventType, userId, userName, metadata);
+    return await this.trigger(nazu, from, eventType, userId, userName, metadata, groupId);
   }
 
   recordEvent(type, userId, description, metadata = {}) {
@@ -755,38 +778,43 @@ ${eventsSummary}
 Total: ${todayEvents.length} eventos! 🌙`;
   }
 
-  toggle(enabled) {
-    this.config.enabled = enabled;
-    saveConfig(this.config);
-    return enabled ? '✅ NPCs ativados!' : '❌ NPCs desativados!';
+  toggle(enabled, groupId) {
+    const config = this.getConfig(groupId);
+    config.enabled = enabled;
+    this.saveConfig(groupId, config);
+    return enabled ? '✅ NPCs ativados neste grupo!' : '❌ NPCs desativados neste grupo!';
   }
 
-  setCooldown(seconds) {
-    this.config.cooldown = seconds * 1000;
-    saveConfig(this.config);
+  setCooldown(seconds, groupId) {
+    const config = this.getConfig(groupId);
+    config.cooldown = seconds * 1000;
+    this.saveConfig(groupId, config);
     return `⏱️ Cooldown: ${seconds}s`;
   }
 
-  setResponseChance(chance) {
-    this.config.responseChance = Math.min(1, Math.max(0, chance));
-    saveConfig(this.config);
-    return `🎯 Chance: ${Math.round(this.config.responseChance * 100)}%`;
+  setResponseChance(chance, groupId) {
+    const config = this.getConfig(groupId);
+    config.responseChance = Math.min(1, Math.max(0, chance));
+    this.saveConfig(groupId, config);
+    return `🎯 Chance: ${Math.round(config.responseChance * 100)}%`;
   }
 
-  toggleJornal(enabled) {
-    this.config.jornalEnabled = enabled;
-    saveConfig(this.config);
+  toggleJornal(enabled, groupId) {
+    const config = this.getConfig(groupId);
+    config.jornalEnabled = enabled;
+    this.saveConfig(groupId, config);
     if (enabled) this.initJornal();
     return enabled ? '✅ Jornal ativado!' : '❌ Jornal desativado!';
   }
 
-  getStatus() {
+  getStatus(groupId) {
+    const config = this.getConfig(groupId);
     return {
-      ativo: this.config.enabled,
-      cooldown: `${this.config.cooldown / 1000}s`,
-      chance: `${Math.round(this.config.responseChance * 100)}%`,
-      jornal: this.config.jornalEnabled ? 'Ativo' : 'Inativo',
-      eventosRegistrados: this.events.allEvents?.length || 0,
+      ativo: config.enabled,
+      cooldown: `${config.cooldown / 1000}s`,
+      chance: `${Math.round(config.responseChance * 100)}%`,
+      jornal: config.jornalEnabled ? 'Ativo' : 'Inativo',
+      eventosRegistrados: this.events.allEvents?.filter(e => !groupId || e.groupId === groupId).length || 0,
       eventosMapeados: Object.keys(ALL_EVENTS).length
     };
   }

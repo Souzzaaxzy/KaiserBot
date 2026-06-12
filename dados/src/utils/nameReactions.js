@@ -1,11 +1,10 @@
-// 🎭 SISTEMA DE REAÇÕES POR NOME
+// 🎭 SISTEMA DE REAÇÕES POR NOME - POR GRUPO
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATABASE_DIR = path.join(__dirname, '../../database');
-const REACTIONS_FILE = `${DATABASE_DIR}/name_reactions.json`;
+const GRUPOS_DIR = path.join(__dirname, '../../database/grupos');
 
 // Normalizar texto - remover acentos e pontuação
 function normalize(text) {
@@ -38,55 +37,68 @@ function generateVariations(name) {
   return [...variations];
 }
 
-function loadReactions() {
+// Carregar configurações do grupo
+function loadGroupSettings(groupId) {
   try {
-    if (fs.existsSync(REACTIONS_FILE)) {
-      return JSON.parse(fs.readFileSync(REACTIONS_FILE, 'utf-8'));
+    const groupFilePath = path.join(GRUPOS_DIR, `${groupId}.json`);
+    if (fs.existsSync(groupFilePath)) {
+      return JSON.parse(fs.readFileSync(groupFilePath, 'utf-8'));
     }
   } catch (e) {
-    console.error('[NameReactions] Erro ao carregar:', e.message);
+    console.error('[NameReactions] Erro ao carregar grupo:', e.message);
   }
-  return { enabled: true, reactions: {}, aliasMap: {} };
+  return { nameReactions: { enabled: true, reactions: {}, aliasMap: {} } };
 }
 
-function saveReactions(data) {
+// Salvar configurações do grupo
+function saveGroupSettings(groupId, data) {
   try {
-    fs.writeFileSync(REACTIONS_FILE, JSON.stringify(data, null, 2));
+    if (!fs.existsSync(GRUPOS_DIR)) {
+      fs.mkdirSync(GRUPOS_DIR, { recursive: true });
+    }
+    const groupFilePath = path.join(GRUPOS_DIR, `${groupId}.json`);
+    const currentData = fs.existsSync(groupFilePath) ? JSON.parse(fs.readFileSync(groupFilePath, 'utf-8')) : {};
+    const newData = { ...currentData, ...data };
+    fs.writeFileSync(groupFilePath, JSON.stringify(newData, null, 2));
     return true;
   } catch (e) {
-    console.error('[NameReactions] Erro ao salvar:', e.message);
+    console.error('[NameReactions] Erro ao salvar grupo:', e.message);
     return false;
   }
 }
 
-class NameReactions {
-  constructor() {
-    this.data = loadReactions();
-    this.rebuildAliasMap();
-  }
-
-  // Reconstrói o mapa de alias
-  rebuildAliasMap() {
-    this.aliasMap = {};
-    for (const [name, config] of Object.entries(this.data.reactions)) {
-      const variations = generateVariations(name);
-      for (const v of variations) {
-        this.aliasMap[v] = name;
-      }
+// Reconstrói o mapa de alias para um grupo
+function rebuildAliasMap(reactions) {
+  const aliasMap = {};
+  for (const [name, config] of Object.entries(reactions)) {
+    const variations = generateVariations(name);
+    for (const v of variations) {
+      aliasMap[v] = name;
     }
   }
+  return aliasMap;
+}
 
-  checkMessage(message) {
-    if (!this.data.enabled || !message) return null;
+class NameReactions {
+  // Verificar mensagem em um grupo específico
+  checkMessage(message, groupId) {
+    if (!message || !groupId) return null;
+    
+    const groupData = loadGroupSettings(groupId);
+    const reactions = groupData.nameReactions?.reactions || {};
+    const aliasMap = groupData.nameReactions?.aliasMap || rebuildAliasMap(reactions);
+    const enabled = groupData.nameReactions?.enabled !== false;
+    
+    if (!enabled) return null;
     
     const textNorm = normalize(message);
     const words = textNorm.split(/\s+/);
     
     for (const word of words) {
-      if (this.aliasMap[word]) {
-        const name = this.aliasMap[word];
-        const config = this.data.reactions[name];
-        if (config && config.enabled) {
+      if (aliasMap[word]) {
+        const name = aliasMap[word];
+        const config = reactions[name];
+        if (config && config.enabled !== false) {
           return { emoji: config.emoji, name };
         }
       }
@@ -95,58 +107,77 @@ class NameReactions {
     return null;
   }
 
-  toggle() {
-    this.data.enabled = !this.data.enabled;
-    saveReactions(this.data);
-    return this.data.enabled;
+  // Toggle sistema no grupo
+  toggle(groupId) {
+    const groupData = loadGroupSettings(groupId);
+    groupData.nameReactions = groupData.nameReactions || { enabled: true, reactions: {}, aliasMap: {} };
+    groupData.nameReactions.enabled = !groupData.nameReactions.enabled;
+    saveGroupSettings(groupId, groupData);
+    return groupData.nameReactions.enabled;
   }
 
-  add(name, emoji) {
+  // Adicionar reação no grupo
+  add(groupId, name, emoji) {
     const nameClean = name.toLowerCase().trim();
-    if (!nameClean || !emoji) return false;
+    if (!nameClean || !emoji || !groupId) return false;
+    
+    const groupData = loadGroupSettings(groupId);
+    groupData.nameReactions = groupData.nameReactions || { enabled: true, reactions: {}, aliasMap: {} };
     
     // Se já existe, atualiza o emoji
-    this.data.reactions[nameClean] = { emoji, enabled: true, createdAt: new Date().toISOString() };
+    groupData.nameReactions.reactions[nameClean] = { emoji, enabled: true, createdAt: new Date().toISOString() };
     
-    // Gerar e salvar variações
-    if (!this.data.aliasMap) this.data.aliasMap = {};
+    // Gerar e salvar variações no aliasMap
     const variations = generateVariations(name);
     for (const v of variations) {
-      this.data.aliasMap[v] = nameClean;
+      groupData.nameReactions.aliasMap[v] = nameClean;
     }
     
-    this.rebuildAliasMap();
-    saveReactions(this.data);
+    saveGroupSettings(groupId, groupData);
     return true;
   }
 
-  remove(name) {
+  // Remover reação no grupo
+  remove(groupId, name) {
     const nameClean = name.toLowerCase().trim();
-    if (this.data.reactions[nameClean]) {
-      delete this.data.reactions[nameClean];
+    if (!nameClean || !groupId) return false;
+    
+    const groupData = loadGroupSettings(groupId);
+    if (!groupData.nameReactions?.reactions) return false;
+    
+    if (groupData.nameReactions.reactions[nameClean]) {
+      delete groupData.nameReactions.reactions[nameClean];
       
-      // Remover alias
-      if (this.data.aliasMap) {
-        for (const [alias, target] of Object.entries(this.data.aliasMap)) {
+      // Remover do aliasMap
+      if (groupData.nameReactions.aliasMap) {
+        for (const [alias, target] of Object.entries(groupData.nameReactions.aliasMap)) {
           if (target === nameClean) {
-            delete this.data.aliasMap[alias];
+            delete groupData.nameReactions.aliasMap[alias];
           }
         }
       }
       
-      this.rebuildAliasMap();
-      saveReactions(this.data);
+      saveGroupSettings(groupId, groupData);
       return true;
     }
     return false;
   }
 
-  list() {
-    return Object.entries(this.data.reactions).map(([name, config]) => ({ name, emoji: config.emoji, enabled: config.enabled }));
+  // Listar reações do grupo
+  list(groupId) {
+    const groupData = loadGroupSettings(groupId);
+    const reactions = groupData.nameReactions?.reactions || {};
+    return Object.entries(reactions).map(([name, config]) => ({ name, emoji: config.emoji, enabled: config.enabled !== false }));
   }
 
-  getStatus() {
-    return { enabled: this.data.enabled, totalReactions: Object.keys(this.data.reactions).length };
+  // Status do grupo
+  getStatus(groupId) {
+    const groupData = loadGroupSettings(groupId);
+    const reactions = groupData.nameReactions?.reactions || {};
+    return { 
+      enabled: groupData.nameReactions?.enabled !== false, 
+      totalReactions: Object.keys(reactions).length 
+    };
   }
 }
 
