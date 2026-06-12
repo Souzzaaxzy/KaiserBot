@@ -34488,6 +34488,41 @@ ${prefix}wl.add @usuario | antilink,antistatus`);
         if (!isCmd && isAutoRepo) {
           await processAutoResponse(nazu, from, budy2, info);
         };
+        
+        // ═══════════════════════════════════════════════════════════════
+        // 🤖 NPC AUTOMÁTICO - Responde a TODOS os eventos
+        // ═══════════════════════════════════════════════════════════════
+        if (npcManager?.isEnabled() && !info.key.fromMe) {
+          // Detecta tipo de mensagem e faz NPC responder
+          const detectedEvent = npcManager.detectEvent(body, sender, pushname);
+          
+          if (detectedEvent) {
+            await npcManager.trigger(nazu, from, detectedEvent, sender, pushname, {});
+          }
+          
+          // Responde a mensagens de mídia
+          if (type === 'imageMessage' && !isCmd) {
+            await npcManager.trigger(nazu, from, 'foto_enviada', sender, pushname, {});
+          } else if (type === 'videoMessage' && !isCmd) {
+            await npcManager.trigger(nazu, from, 'video_enviado', sender, pushname, {});
+          } else if (type === 'audioMessage' && !isCmd) {
+            await npcManager.trigger(nazu, from, 'audio_enviado', sender, pushname, {});
+          } else if (type === 'stickerMessage' && !isCmd) {
+            await npcManager.trigger(nazu, from, 'sticker_enviado', sender, pushname, {});
+          } else if (type === 'documentMessage' && !isCmd) {
+            await npcManager.trigger(nazu, from, 'documento_enviado', sender, pushname, {});
+          }
+          
+          // Responde a links compartilhados
+          if (budy2.includes('http') || budy2.includes('www.')) {
+            await npcManager.trigger(nazu, from, 'link_compartilhado', sender, pushname, {});
+          }
+          
+          // Responde a mensagens com perguntas (interação)
+          if (!isCmd && (body.endsWith('?') || body.includes('?')) && Math.random() < 0.3) {
+            await npcManager.trigger(nazu, from, 'mensagem_enviada', sender, pushname, {});
+          }
+        }
     };
 
   } catch (error) {
