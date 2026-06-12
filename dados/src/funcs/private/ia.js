@@ -1540,7 +1540,7 @@ function extractJSON(content) {
   console.error('Conteúdo recebido (primeiros 200 chars):', content.substring(0, 200) + '...');
   
   // Retornar o conteúdo limpo como resposta de fallback
-  return { resp: [{ resp: cleanWhatsAppFormatting(cleanContent) || "Não entendi a resposta, pode tentar de novo?" }] };
+  return { resp: [{ resp: "Hmm, não consegui pensar em uma resposta agora... pode me perguntar de outro jeito? 🌙" }] };
 }
 
 function validateMessage(msg) {
