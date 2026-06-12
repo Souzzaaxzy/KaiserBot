@@ -99,6 +99,76 @@ const NPC_RESPONSES = {
       "Alguém curtiu o que {user} fez! 💖",
       "{user} tá subindo no ranking! 📈"
     ],
+    work_sucesso: [
+      "{user} trabalhou e ganhou {amount}! 💼",
+      "{user} botou pra trabalhar e faturou {amount}! 💪",
+      "Trabalhador! {user} fez {amount}! 💰"
+    ],
+    crime_sucesso: [
+      "{user} assaltou e levou {amount}! 😈",
+      "Criminoso! {user} faturou {amount}! 💸",
+      "{user} fez uma limpa e conseguiu {amount}! 🦹"
+    ],
+    crime_falhou: [
+      "{user} foi preso! Levaram {amount}... 😱",
+      "Ops! {user} foi pego no crime! Perdeu {amount}! 👮",
+      "{user} não teve sorte... preso e perdeu {amount}! 🔒"
+    ],
+    daily_reward: [
+      "{user} coletou o daily de {amount}! 🎁",
+      "Boa! {user} pegou {amount} do daily! 🌟",
+      "{user} tá rico! {amount} no bolso! 💎"
+    ],
+    compra_loja: [
+      "{user} comprou {item}! 🛒",
+      "Nova aquisição de {user}: {item}! ✨",
+      "{user} fez uma compra: {item}! 🛍️"
+    ],
+    duelo_vitoria: [
+      "{user} venceu o duelo! +{amount} 🏆",
+      "Campeão! {user} ganhou {amount} no duelo! 🎉",
+      "{user} destruiu o oponente e levou {amount}! 💪"
+    ],
+    duelo_derrota: [
+      "{user} perdeu o duelo para {target}... -{amount} 💀",
+      "{target} venceu {user} no duelo! -{amount} 😢",
+      "{user} foi destruído no duelo... perdeu {amount}! 💸"
+    ],
+    transferencia: [
+      "{user} transferiu {amount} para {target}! 💸",
+      "Pagamento feito! {user} enviou {amount} pra {target}! 🏧",
+      "{target} recebeu {amount} de {user}! ✨"
+    ],
+    pesca_sucesso: [
+      "{user} pescou e ganhou {amount}! 🎣",
+      "Pescador sortudo! {user} fez {amount}! 🐟",
+      "{user} voltou com {amount} da pescaria! 🌊"
+    ],
+    cacada_sucesso: [
+      "{user} caçou e faturou {amount}! 🏹",
+      "Caçador! {user} trouxe {amount} da expedição! 🦁",
+      "{user} voltou da caça com {amount}! 🎯"
+    ],
+    fazenda_colheita: [
+      "{user} colheu {amount} da fazenda! 🌾",
+      "Colheita boa! {user} faturou {amount}! 🌽",
+      "{user} fez a fazenda render {amount}! 🚜"
+    ],
+    forjar_item: [
+      "{user} forjou {item}! 🔨",
+      "Artesão! {user} criou {item}! ⚔️",
+      "{user} saiu da forja com {item}! 🔥"
+    ],
+    novo_alpha: [
+      "{user} virou Alpha! 🏆",
+      "O novo Alpha é {user}! 👑",
+      "{user} está no topo! Alpha confirmado! ⭐"
+    ],
+    voto_positivo: [
+      "{user} recebeu um upvote! 👍",
+      "Alguém curtiu o que {user} fez! 💖",
+      "{user} tá subindo no ranking! 📈"
+    ],
     default: [
       "Hm... {event} aconteceu com {user} 🌙",
       "Interessante... {user} fez algo 👀",
