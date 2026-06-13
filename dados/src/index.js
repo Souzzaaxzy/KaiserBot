@@ -6101,7 +6101,7 @@ if (isCmd && command && !isOwnerOrSub) {
       case 'menufut': {
         try {
           const { getMenuFut } = await import('./games/futebol/menu.js');
-          const futGifPath = __dirname + '/../midias/menufut_optimized.mp4';
+          const futGifPath = __dirname + '/../midias/menufut_v2.mp4';
           const futImagePath = __dirname + '/../midias/menufut.jpg';
           
           const mediaPath = fs.existsSync(futGifPath) ? futGifPath : futImagePath;
