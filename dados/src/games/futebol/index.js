@@ -73,6 +73,7 @@ export async function handleFutCommand(args, messageInfo, reply) {
     // ═══════════════════════════════════════════════════════════════
     case 'treinar':
     case 'treino':
+    case 'tre':
       if (!player) {
         return reply('❌ Você não está registrado!\nUse *!fut entrar* para começar.');
       }
@@ -81,13 +82,10 @@ export async function handleFutCommand(args, messageInfo, reply) {
       const attrName = ATTR_NAMES[subCommand];
       
       if (!attrName) {
-        let text = '🏋️ *TREINOS DISPONÍVEIS*\n\n';
-        text += 'Custo: 5.000 FC Coins por treino\n';
-        text += 'Ganho: 1-3 pontos por atributo\n\n';
-        text += '━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+        let text = '🏋️ *TREINOS*\n\n⚡ Custo: 30 de energia\n📈 Ganho: 1-3 pontos\n\n';
         
         Object.entries(ATTR_NAMES).forEach(([key, name]) => {
-          text += `• !fut treinar ${key} - ${name}\n`;
+          text += `• !fut tre ${key}\n`;
         });
         
         return reply(text);
@@ -116,6 +114,7 @@ export async function handleFutCommand(args, messageInfo, reply) {
     // HABILIDADES
     // ═══════════════════════════════════════════════════════════════
     case 'habilidades':
+    case 'hab':
     case 'skills':
       if (!player) {
         return reply('❌ Você não está registrado!\nUse *!fut entrar* para começar.');
@@ -204,11 +203,13 @@ export async function handleFutCommand(args, messageInfo, reply) {
       return reply(getX1ChallengeMessage(player, targetPlayer, match.id));
     
     case 'aceitarx1':
+    case 'ax1':
+    case 'aceitar':
       // Buscar desafio pendente usando o banco de dados
       const pendingChallenge = db.getPendingChallengeForPlayer(sender);
       
       if (!pendingChallenge) {
-        return reply('❌ Nenhum desafio pendente para você!\n\nUse *!fut x1 @usuario* para desafiar alguém.');
+        return reply('❌ Nenhum desafio pendente!\n\nUse *!fut x1 @usuario* para desafiar.');
       }
       
       // Atualizar status para accepted
@@ -224,11 +225,12 @@ export async function handleFutCommand(args, messageInfo, reply) {
       return reply(getX1ResultMessage(matchResult));
     
     case 'recusarx1':
+    case 'rx1':
       const refuseChallenge = db.getPendingChallengeForPlayer(sender);
       if (refuseChallenge) {
         refuseChallenge.status = 'declined';
         db.save();
-        return reply('❌ Você recusou o desafio de X1.');
+        return reply('❌ Desafio recusado.');
       }
       return reply('❌ Você não tem desafios pendentes.');
     
@@ -266,21 +268,22 @@ export async function handleFutCommand(args, messageInfo, reply) {
     // ═══════════════════════════════════════════════════════════════
     case 'criarclube':
     case 'criar':
+    case 'cc':
       if (!player) {
         return reply('❌ Você não está registrado!\nUse *!fut entrar* para começar.');
       }
       
       if (player.currentClub) {
-        return reply('❌ Você já está em um clube!\nSaias primeiro com *!fut sairclube*.');
+        return reply('❌ Você já está em um clube!\nSaias primeiro com *!fut sair*.');
       }
       
       const clubName = args.slice(1).join(' ');
       if (!clubName || clubName.length < 3) {
-        return reply('📌 Use: *!fut criarclube [nome]*\n\nO nome deve ter pelo menos 3 caracteres.');
+        return reply('📌 Use: *!fut criar [nome]*\n\nMínimo 3 caracteres, máximo 20.');
       }
       
       if (clubName.length > 20) {
-        return reply('❌ Nome do clube muito longo! Máximo: 20 caracteres.');
+        return reply('❌ Nome muito longo! Máximo: 20 caracteres.');
       }
       
       // Verificar se já existe clube com este nome
@@ -289,15 +292,16 @@ export async function handleFutCommand(args, messageInfo, reply) {
       }
       
       const newClub = db.createClub(clubName, sender, senderName);
-      return reply(`✅ *CLUBE CRIADO!* ✅\n\n⚽ ${clubName}\n👑 Presidente: ${senderName}\n\nAgora você pode contratar jogadores com *!fut proposta @usuario [salário]*`);
+      return reply(`✅ *CLUBE CRIADO!* ✅\n\n⚽ ${clubName}\n👑 Presidente: ${senderName}\n\nUse *!fut prop @user [salário]* para contratar!`);
     
     case 'clube':
+    case 'meuclube':
       if (!player) {
         return reply('❌ Você não está registrado!');
       }
       
       if (!player.currentClub) {
-        return reply('❌ Você não está em nenhum clube!\n\n📌 Crie um: *!fut criarclube [nome]*');
+        return reply('❌ Você não está em nenhum clube!\n\n📌 Use: *!fut criar [nome]*');
       }
       
       const club = db.getClub(player.currentClub);
@@ -308,6 +312,7 @@ export async function handleFutCommand(args, messageInfo, reply) {
       return reply(getClubMessage(club, db.players));
     
     case 'membros':
+    case 'jogadores':
       if (!player) {
         return reply('❌ Você não está registrado!');
       }
@@ -351,6 +356,7 @@ export async function handleFutCommand(args, messageInfo, reply) {
     // NEGOCIAÇÕES
     // ═══════════════════════════════════════════════════════════════
     case 'proposta':
+    case 'prop':
       if (!player) {
         return reply('❌ Você não está registrado!');
       }
@@ -392,6 +398,8 @@ export async function handleFutCommand(args, messageInfo, reply) {
       return reply(`⚽ *NOVA PROPOSTA!* ⚽\n\n📤 De: ${userClub.name}\n💰 Salário: ${salary.toLocaleString()}/sem\n\n📩 Enviada para @${targetUser.split('@')[0]}!\n\n⏳ Aguardando resposta...`);
     
     case 'negociacoes':
+    case 'negs':
+    case 'negociar':
       if (!player) {
         return reply('❌ Você não está registrado!');
       }
@@ -406,21 +414,21 @@ export async function handleFutCommand(args, messageInfo, reply) {
         }
         
         if (clubNegs.length === 0) {
-          return reply('📭 Nenhuma negociação pendente no seu clube.');
+          return reply('📭 Nenhuma negociação pendente.');
         }
         
-        let negsText = `📝 *NEGOCIAÇÕES DO CLUBE (${clubNegs.length})*\n\n`;
+        let negsText = `📝 *NEGOCIAÇÕES (${clubNegs.length})*\n\n`;
         clubNegs.forEach((n, i) => {
           negsText += `━━━━━━━━━━━━━━━━━━━━━━━━\n`;
           negsText += `${i + 1}. @${n.playerName}\n`;
-          negsText += `   Salário: ${n.salary.toLocaleString()}/sem\n`;
+          negsText += `   💰 ${n.salary.toLocaleString()}/sem\n`;
           negsText += `   ${n.counterOffer ? '🔄 Contra-oferta' : '📤 Proposta'}\n`;
           negsText += `   ID: ${n.id}\n`;
         });
         negsText += `\n📌 *AÇÕES:*\n`;
-        negsText += `• !fut aceitar neg [id] - Contratar\n`;
-        negsText += `• !fut reprovar neg [id] - Recusar\n`;
-        negsText += `• !fut contraprop [id] [valor] - Fazer contra-oferta`;
+        negsText += `• !fut ace [id] - Contratar\n`;
+        negsText += `• !fut repro [id] - Recusar\n`;
+        negsText += `• !fut cnt [id] [valor] - Contra-oferta`;
         
         return reply(negsText);
       } else {
@@ -435,26 +443,27 @@ export async function handleFutCommand(args, messageInfo, reply) {
         playerNegs.forEach((n, i) => {
           playerNegsText += `━━━━━━━━━━━━━━━━━━━━━━━━\n`;
           playerNegsText += `${i + 1}. ${n.clubName}\n`;
-          playerNegsText += `   💰 Salário: ${n.salary.toLocaleString()}/sem\n`;
-          playerNegsText += `   ${n.counterOffer ? '🔄 Contra-oferta do clube' : '📤 Proposta inicial'}\n`;
+          playerNegsText += `   💰 ${n.salary.toLocaleString()}/sem\n`;
+          playerNegsText += `   ${n.counterOffer ? '🔄 Contra-oferta' : '📤 Proposta'}\n`;
           playerNegsText += `   ID: ${n.id}\n`;
         });
         playerNegsText += `\n📌 *AÇÕES:*\n`;
-        playerNegsText += `• !fut aceitar neg [id] - Aceitar e entrar no clube\n`;
-        playerNegsText += `• !fut reprovar neg [id] - Recusar\n`;
-        playerNegsText += `• !fut contraprop [id] [valor] - Fazer contra-oferta`;
+        playerNegsText += `• !fut ace [id] - Aceitar\n`;
+        playerNegsText += `• !fut repro [id] - Recusar\n`;
+        playerNegsText += `• !fut cnt [id] [valor] - Contra-oferta`;
         
         return reply(playerNegsText);
       }
     
     case 'aceitar':
+    case 'ace':
       if (!player) {
         return reply('❌ Você não está registrado!');
       }
       
       const negId = args[1];
       if (!negId) {
-        return reply('📌 Use: *!fut aceitar neg [id]*');
+        return reply('📌 Use: *!fut ace [id]*');
       }
       
       const acceptResult = db.acceptNegotiation(negId);
@@ -462,16 +471,17 @@ export async function handleFutCommand(args, messageInfo, reply) {
         return reply(`❌ ${acceptResult.error}`);
       }
       
-      return reply(`✅ *CONTRATADO!* ✅\n\n⚽ Clube: ${acceptResult.negotiation.clubName}\n💰 Salário: ${acceptResult.negotiation.salary.toLocaleString()}/sem\n\nBem-vindo ao clube! 🏆`);
+      return reply(`✅ *CONTRATADO!* ✅\n\n⚽ Clube: ${acceptResult.negotiation.clubName}\n💰 Salário: ${acceptResult.negotiation.salary.toLocaleString()}/sem\n\nBem-vindo! 🏆`);
     
     case 'reprovar':
+    case 'repro':
       if (!player) {
         return reply('❌ Você não está registrado!');
       }
       
       const rejectNegId = args[1];
       if (!rejectNegId) {
-        return reply('📌 Use: *!fut reprovar neg [id]*');
+        return reply('📌 Use: *!fut repro [id]*');
       }
       
       const rejectResult = db.rejectNegotiation(rejectNegId);
@@ -482,7 +492,7 @@ export async function handleFutCommand(args, messageInfo, reply) {
       return reply('❌ Negociação reprovada.');
     
     case 'contraprop':
-    case 'negociar':
+    case 'cnt':
       if (!player) {
         return reply('❌ Você não está registrado!');
       }
@@ -491,7 +501,7 @@ export async function handleFutCommand(args, messageInfo, reply) {
       const counterSalary = parseInt(args[2]);
       
       if (!negToCounterId || !counterSalary) {
-        return reply('📌 Use: *!fut contraprop [id] [valor]*');
+        return reply('📌 Use: *!fut cnt [id] [valor]*');
       }
       
       const existingNeg = db.getNegotiation(negToCounterId);
@@ -510,7 +520,7 @@ export async function handleFutCommand(args, messageInfo, reply) {
         
         const counterNeg = db.createNegotiation(player.currentClub, existingNeg.playerId, counterSalary, true);
         
-        return reply(`🔄 *CONTRA-OFERTA ENVIADA!* 🔄\n\n📤 Para: @${existingNeg.playerName}\n💰 Novo salário: ${counterSalary.toLocaleString()}/sem\n\nAguardando resposta do jogador...`);
+        return reply(`🔄 *CONTRA-OFERTA ENVIADA!* 🔄\n\n📤 Para: @${existingNeg.playerName}\n💰 Novo salário: ${counterSalary.toLocaleString()}/sem\n\nAguardando resposta...`);
       } else {
         // Jogador fazendo contra-oferta
         if (existingNeg.playerId !== sender) {
@@ -519,18 +529,19 @@ export async function handleFutCommand(args, messageInfo, reply) {
         
         const counterNegFromPlayer = db.createNegotiation(existingNeg.clubId, sender, counterSalary, true);
         
-        return reply(`🔄 *CONTRA-OFERTA ENVIADA!* 🔄\n\n📤 Para: ${existingNeg.clubName}\n💰 Salário proposto: ${counterSalary.toLocaleString()}/sem\n\nAguardando resposta do presidente...`);
+        return reply(`🔄 *CONTRA-OFERTA ENVIADA!* 🔄\n\n📤 Para: ${existingNeg.clubName}\n💰 Salário proposto: ${counterSalary.toLocaleString()}/sem\n\nAguardando resposta...`);
       }
     
     case 'minhaspropostas':
     case 'verpropostas':
+    case 'props':
       if (!player) {
         return reply('❌ Você não está registrado!');
       }
       
       const myNegs = db.getPlayerNegotiations(sender);
       if (myNegs.length === 0) {
-        return reply('📭 Você não tem propostas pendentes.\n\nUse *!fut proposta @usuario [salário]* como presidente para enviar uma.');
+        return reply('📭 Você não tem propostas.\n\n💡 Presidentes: use *!fut prop @user [salário]*');
       }
       
       let myProposalsText = `📝 *SUAS PROPOSTAS*\n\n`;

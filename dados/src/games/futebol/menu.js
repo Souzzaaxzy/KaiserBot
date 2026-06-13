@@ -50,36 +50,34 @@ Olá, ${playerName}!
 • !fut energia
 
 ⚡ *ENERGIA*
-• !fut treinar pac/sho/pas/dri/def/phy
+• !fut tre pac/sho/pas/dri/def/phy
 • !fut descansar
 
 ⚔️ *PARTIDAS*
 • !fut x1 @usuario
-• !fut aceitarx1
-• !fut recusarx1
+• !fut ax1 - aceitar
+• !fut rx1 - recusar
 
 🏆 *DIVISÕES*
 • !fut divisoes
 • !fut ranking
 
 💪 *HABILIDADES*
-• !fut habilidades
-• !fut loja habilidades
+• !fut hab
 • !fut comprar hab [id]
 
 ⚙️ *CLUBE*
-• !fut criarclube [nome]
+• !fut criar [nome]
 • !fut clube
 • !fut membros
-• !fut sairclube
+• !fut sair
 
 💼 *NEGOCIAÇÕES*
-• !fut proposta @user [salário]
-• !fut negociacoes
-• !fut aceitar neg [id]
-• !fut reprovar neg [id]
-• !fut contraprop [id] [valor]
-• !fut minhaspropostas
+• !fut prop @user [salário]
+• !fut negs - ver suas
+• !fut ace [id] - aceitar
+• !fut repro [id] - recusar
+• !fut cnt [id] [valor]
 
 🌟 *GLOBAL*
 • !fut topglobal
