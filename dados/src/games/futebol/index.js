@@ -579,6 +579,58 @@ export async function handleFutCommand(args, messageInfo, reply) {
       return reply(rivalsText);
     
     // ═══════════════════════════════════════════════════════════════
+    // CÓDIGOS PROMOCIONAIS
+    // ═══════════════════════════════════════════════════════════════
+    case 'codigo':
+      if (!player) {
+        return reply('❌ Você não está registrado!');
+      }
+      const codeToRedeem = args[1]?.toUpperCase();
+      if (!codeToRedeem) {
+        return reply(`🎁 *CÓDIGO PROMOCIONAL*
+
+📌 Use: *!fut codigo [CÓDIGO]*
+
+Exemplo: *!fut codigo ELITE2026*
+
+💡 Códigos podem dar:
+• FC Coins
+• XP Futebol
+• Títulos
+• Itens especiais`);
+      }
+      
+      const redeemResult = db.redeemPromoCode(sender, codeToRedeem);
+      if (!redeemResult.success) {
+        return reply(`❌ *ERRO*\n\n${redeemResult.error}`);
+      }
+      
+      let redeemText = `🎉 *CÓDIGO RESGATADO!*\n\n`;
+      
+      if (redeemResult.type === 'mysterious') {
+        redeemText += `🎲 *RECOMPENSA MISTERIOSA!*\n\n`;
+      }
+      
+      if (redeemResult.rewards.coins > 0) {
+        redeemText += `💰 +${redeemResult.rewards.coins.toLocaleString()} FC Coins\n`;
+      }
+      if (redeemResult.rewards.xp > 0) {
+        redeemText += `⭐ +${redeemResult.rewards.xp} XP\n`;
+      }
+      if (redeemResult.rewards.title && redeemResult.rewards.title !== '???') {
+        redeemText += `🏅 Título: ${redeemResult.rewards.title}\n`;
+      }
+      
+      if (redeemResult.leveledUp) {
+        redeemText += `\n🎉 *SUBIU DE NÍVEL!*`;
+        redeemResult.newLevel.forEach(lvl => {
+          redeemText += `\n📊 Nível ${lvl.level}!`;
+        });
+      }
+      
+      return reply(redeemText);
+    
+    // ═══════════════════════════════════════════════════════════════
     // SALDO
     // ═══════════════════════════════════════════════════════════════
     case 'saldo':
@@ -1241,6 +1293,153 @@ export async function handleFutCommand(args, messageInfo, reply) {
           return reply(`🏆 TEMPORADA ${status.number}\nDias restantes: ${status.daysLeft}`);
         }
         
+        // ═══════════════════════════════════════════════════════════════
+        // CÓDIGOS PROMOCIONAIS (ADMIN)
+        // ═══════════════════════════════════════════════════════════════
+        case 'codigo':
+        case 'promo': {
+          const subAction = args[1];
+          
+          // Criar código normal
+          if (subAction === 'criar') {
+            const code = args[2]?.toUpperCase();
+            const coins = parseInt(args[3]) || 0;
+            const xp = parseInt(args[4]) || 0;
+            const maxUses = args[5] ? parseInt(args[5]) : null;
+            const hours = parseInt(args[6]) || 0;
+            
+            if (!code) {
+              return reply(`📌 *CRIAR CÓDIGO*
+
+*!fut admin codigo criar [CODIGO] [COINS] [XP] [USOS] [HORAS]*
+
+Exemplo:
+*!fut admin codigo criar ELITE2026 5000 200 50 48*
+
+• Código: ELITE2026
+• Coins: 5000
+• XP: 200
+• Usos: 50 (null = ilimitado)
+• Horas: 48 (0 = nunca expira)`);
+            }
+            
+            const expiresAt = hours > 0 ? Date.now() + (hours * 60 * 60 * 1000) : null;
+            const result = db.createPromoCode({
+              code: code,
+              type: 'normal',
+              coins: coins,
+              xp: xp,
+              maxUses: maxUses,
+              expiresAt: expiresAt,
+              createdBy: sender
+            });
+            
+            if (!result.success) {
+              return reply(`❌ ${result.error}`);
+            }
+            
+            let createText = `✅ *CÓDIGO CRIADO!*\n\n`;
+            createText += `🎁 Código: *${code}*\n`;
+            createText += `💰 Coins: ${coins.toLocaleString()}\n`;
+            createText += `⭐ XP: ${xp}\n`;
+            createText += `👥 Usos: ${maxUses || 'Ilimitado'}\n`;
+            createText += `⏰ Expira: ${hours > 0 ? `${hours}h` : 'Nunca'}`;
+            return reply(createText);
+          }
+          
+          // Criar código misterioso
+          if (subAction === 'misterioso' || subAction === 'mysterious') {
+            const minCoins = parseInt(args[2]) || 100;
+            const maxCoins = parseInt(args[3]) || 1000;
+            const minXP = parseInt(args[4]) || 10;
+            const maxXP = parseInt(args[5]) || 100;
+            const maxUses = args[6] ? parseInt(args[6]) : null;
+            
+            const result = db.createPromoCode({
+              type: 'mysterious',
+              mysteriousRewards: { minCoins, maxCoins, minXP, maxXP },
+              maxUses: maxUses,
+              createdBy: sender
+            });
+            
+            if (!result.success) {
+              return reply(`❌ ${result.error}`);
+            }
+            
+            let mystText = `🎲 *CÓDIGO MISTERIOSO CRIADO!*\n\n`;
+            mystText += `🎁 Código: *${result.code.code}*\n`;
+            mystText += `💰 Coins: ${minCoins} ~ ${maxCoins}\n`;
+            mystText += `⭐ XP: ${minXP} ~ ${maxXP}\n`;
+            mystText += `👥 Usos: ${maxUses || 'Ilimitado'}`;
+            return reply(mystText);
+          }
+          
+          // Listar códigos
+          if (subAction === 'listar' || subAction === 'list') {
+            const codes = db.listPromoCodes();
+            if (codes.length === 0) {
+              return reply('📭 Nenhum código criado ainda!');
+            }
+            let listText = `📋 *CÓDIGOS PROMOCIONAIS*\n\n`;
+            codes.forEach(c => {
+              const status = c.active ? '🟢' : '🔴';
+              listText += `${status} ${c.code}\n`;
+              listText += `   Tipo: ${c.type === 'mysterious' ? '🎲 Misterioso' : '🧾 Normal'}\n`;
+              listText += `   Usos: ${c.currentUses}/${c.maxUses}\n`;
+              listText += `   Expira: ${c.expiresAt}\n\n`;
+            });
+            return reply(listText);
+          }
+          
+          // Logs de uso
+          if (subAction === 'log' || subAction === 'logs') {
+            const logs = db.getPromoCodeLogs(20);
+            if (logs.length === 0) {
+              return reply('📭 Nenhum resgate registrado!');
+            }
+            let logText = `📜 *LOG DE CÓDIGOS*\n\n`;
+            logs.forEach(log => {
+              const date = new Date(log.timestamp).toLocaleString();
+              logText += `👤 ${log.playerName}\n`;
+              logText += `🎁 Código: ${log.code}\n`;
+              logText += `💰 +${log.rewards.coins?.toLocaleString() || 0} coins\n`;
+              logText += `📅 ${date}\n\n`;
+            });
+            return reply(logText);
+          }
+          
+          // Desativar código
+          if (subAction === 'desativar' || subAction === 'disable') {
+            const codeToDisable = args[2]?.toUpperCase();
+            if (!codeToDisable) {
+              return reply('📌 Use: *!fut admin codigo desativar [CODIGO]*');
+            }
+            const result = db.deactivatePromoCode(codeToDisable);
+            if (!result.success) {
+              return reply(`❌ ${result.error}`);
+            }
+            return reply(`✅ Código *${codeToDisable}* desativado!`);
+          }
+          
+          // Help
+          return reply(`🎁 *COMANDOS DE CÓDIGOS*
+
+📌 *Criar código normal:*
+*!fut admin codigo criar [COD] [COINS] [XP] [USOS] [HORAS]*
+
+📌 *Criar código misterioso:*
+*!fut admin codigo misterioso [MINC] [MAXC] [MINX] [MAXX] [USOS]*
+
+📌 *Listar códigos:*
+*!fut admin codigo listar*
+
+📌 *Ver logs:*
+*!fut admin codigo log*
+
+📌 *Desativar código:*
+*!fut admin codigo desativar [CODIGO]*`);
+        }
+        
         case 'help':
         default: {
           return reply(`🔧 *COMANDOS ADMIN DO FUT*
@@ -1251,6 +1450,7 @@ export async function handleFutCommand(args, messageInfo, reply) {
 📌 *XP:* addxp, setlevel, setevo, addevo, resetxp
 📌 *Reputação:* setrep @user [0-100], addrep @user [±valor]
 📌 *Temporada:* season (status), season reset, season config [dias] [true/false]
+📌 *Códigos:* codigo criar, codigo misterioso, codigo listar, codigo log, codigo desativar
 📌 *Treinos:* settreino @user [attr] [valor]
 📌 *Solo:* setsolo @user reset
 📌 *Reset:* resetall, clubes, x1reset`);

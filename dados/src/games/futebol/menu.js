@@ -93,6 +93,7 @@ Olá, ${playerName}!
 🎁 *RECOMPENSAS*
 • !fut diaria - Caixa diária
 • !fut semanal - Missões
+• !fut codigo [CODIGO] - Resgatar código
 
 🏆 *EXTRAS*
 • !fut forma - Ver sua forma

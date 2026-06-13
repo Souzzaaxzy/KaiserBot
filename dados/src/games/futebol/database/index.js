@@ -378,6 +378,195 @@ class FootballDB {
   }
 
   // ═══════════════════════════════════════════════════════════════
+  // SISTEMA DE CÓDIGOS PROMOCIONAIS
+  // ═══════════════════════════════════════════════════════════════
+
+  // Códigos promocionais
+  promoCodes = {};
+
+  // Log de uso de códigos
+  promoCodeLogs = [];
+
+  // Gerar código aleatório
+  generatePromoCode(length = 6) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < length; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  }
+
+  // Criar código promocional
+  createPromoCode(options = {}) {
+    const code = options.code || this.generatePromoCode();
+    
+    // Verificar se código já existe
+    if (this.promoCodes[code]) {
+      return { success: false, error: 'Código já existe!' };
+    }
+
+    const promoCode = {
+      code: code,
+      type: options.type || 'normal', // 'normal' ou 'mysterious'
+      rewards: {
+        coins: options.coins || 0,
+        xp: options.xp || 0,
+        title: options.title || null
+      },
+      mysteriousRewards: options.mysteriousRewards || null, // { minCoins, maxCoins, minXP, maxXP, rareChance }
+      maxUses: options.maxUses || null, // null = ilimitado
+      currentUses: 0,
+      expiresAt: options.expiresAt || null, // timestamp ou null = nunca expira
+      createdAt: Date.now(),
+      createdBy: options.createdBy || 'admin',
+      active: true,
+      usedBy: [] // lista de userIds que já usaram
+    };
+
+    this.promoCodes[code] = promoCode;
+    this.save();
+    
+    return { success: true, code: promoCode };
+  }
+
+  // Resgatar código
+  redeemPromoCode(userId, code) {
+    const player = this.players[userId];
+    if (!player) return { success: false, error: 'Jogador não encontrado!' };
+
+    const promoCode = this.promoCodes[code.toUpperCase()];
+    
+    if (!promoCode) {
+      return { success: false, error: 'Código inválido!' };
+    }
+
+    if (!promoCode.active) {
+      return { success: false, error: 'Código desativado!' };
+    }
+
+    // Verificar expiração
+    if (promoCode.expiresAt && Date.now() > promoCode.expiresAt) {
+      return { success: false, error: 'Código expirado!' };
+    }
+
+    // Verificar limite de usos
+    if (promoCode.maxUses && promoCode.currentUses >= promoCode.maxUses) {
+      return { success: false, error: 'Limite de usos atingido!' };
+    }
+
+    // Verificar se jogador já usou
+    if (promoCode.usedBy.includes(userId)) {
+      return { success: false, error: 'Você já usou este código!' };
+    }
+
+    // Calcular recompensas
+    let rewards;
+    let displayRewards;
+
+    if (promoCode.type === 'mysterious') {
+      // Código misterioso - recompensas variáveis
+      const config = promoCode.mysteriousRewards;
+      const coins = Math.floor(Math.random() * (config.maxCoins - config.minCoins + 1)) + config.minCoins;
+      const xp = Math.floor(Math.random() * (config.maxXP - config.minXP + 1)) + config.minXP;
+      
+      rewards = { coins, xp, title: null };
+      displayRewards = {
+        coins: coins,
+        xp: xp,
+        title: '???'
+      };
+    } else {
+      // Código normal
+      rewards = { ...promoCode.rewards };
+      displayRewards = { ...promoCode.rewards };
+    }
+
+    // Aplicar recompensas
+    if (rewards.coins > 0) {
+      player.economy.fcCoins += rewards.coins;
+      player.economy.totalEarned += rewards.coins;
+    }
+    
+    if (rewards.xp > 0) {
+      const xpResult = this.addXP(userId, rewards.xp);
+      rewards.leveledUp = xpResult.leveledUp;
+      rewards.newLevel = xpResult.leveledUp ? xpResult.levelsGained : null;
+    }
+    
+    if (rewards.title && !player.unlockedTitles.includes(rewards.title)) {
+      player.unlockedTitles.push(rewards.title);
+    }
+
+    // Atualizar código
+    promoCode.currentUses++;
+    promoCode.usedBy.push(userId);
+
+    // Registrar no log
+    this.promoCodeLogs.push({
+      userId: userId,
+      playerName: player.name,
+      code: code.toUpperCase(),
+      rewards: rewards,
+      timestamp: Date.now()
+    });
+
+    // Verificar conquistas
+    if (rewards.coins > 0) {
+      this.checkAchievements(userId, 'match', player.stats.matches);
+    }
+
+    this.save();
+
+    return {
+      success: true,
+      type: promoCode.type,
+      rewards: displayRewards,
+      leveledUp: rewards.leveledUp,
+      newLevel: rewards.newLevel
+    };
+  }
+
+  // Listar códigos (para admin)
+  listPromoCodes() {
+    return Object.values(this.promoCodes).map(c => ({
+      code: c.code,
+      type: c.type,
+      rewards: c.type === 'mysterious' ? '???' : c.rewards,
+      maxUses: c.maxUses || '∞',
+      currentUses: c.currentUses,
+      expiresAt: c.expiresAt ? new Date(c.expiresAt).toLocaleString() : 'Nunca',
+      active: c.active
+    }));
+  }
+
+  // Desativar código
+  deactivatePromoCode(code) {
+    if (!this.promoCodes[code.toUpperCase()]) {
+      return { success: false, error: 'Código não encontrado!' };
+    }
+    this.promoCodes[code.toUpperCase()].active = false;
+    this.save();
+    return { success: true };
+  }
+
+  // Ver logs
+  getPromoCodeLogs(limit = 50) {
+    return this.promoCodeLogs.slice(-limit).reverse();
+  }
+
+  // Obter código misterioso ativo aleatório
+  getRandomMysteriousCode() {
+    const mysteriousCodes = Object.values(this.promoCodes)
+      .filter(c => c.type === 'mysterious' && c.active && 
+        (!c.expiresAt || Date.now() < c.expiresAt) &&
+        (!c.maxUses || c.currentUses < c.maxUses));
+    
+    if (mysteriousCodes.length === 0) return null;
+    return mysteriousCodes[Math.floor(Math.random() * mysteriousCodes.length)];
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   // SISTEMA DE XP E NÍVEIS
   // ═══════════════════════════════════════════════════════════════
 
