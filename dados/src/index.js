@@ -6109,15 +6109,14 @@ if (isCmd && command && !isOwnerOrSub) {
           const hasVideo = fs.existsSync(futVideoPath);
           const hasGif = fs.existsSync(futGifPath);
           const mediaPath = hasVideo ? futVideoPath : (hasGif ? futGifPath : futImagePath);
-          const mediaBuffer = fs.readFileSync(mediaPath);
           const menuText = getMenuFut(pushname);
           const lerMaisPrefix = getMenuLerMaisText();
 
-          // Envia como video (MP4 ou GIF animado)
+          // Envia como video usando URL (funciona melhor com arquivos grandes)
           await nazu.sendMessage(from, {
-            video: mediaBuffer,
+            video: { url: `file://${mediaPath}` },
             caption: lerMaisPrefix + menuText,
-            gifPlayback: !hasVideo, // true só se for GIF
+            gifPlayback: hasGif && !hasVideo,
             mimetype: 'video/mp4'
           }, {
             quoted: info
