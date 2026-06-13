@@ -26,6 +26,7 @@ import {
 const pendingX1 = new Map();
 
 export async function handleFutCommand(args, messageInfo, reply) {
+  console.log("[FUT] Comando recebido:", command, "Args:", args);
   const { sender, senderName, from, nazu } = messageInfo;
   const command = args[0]?.toLowerCase() || '';
   const subCommand = args[1]?.toLowerCase();
