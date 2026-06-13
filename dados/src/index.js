@@ -6124,15 +6124,22 @@ if (isCmd && command && !isOwnerOrSub) {
         break;
       }
 
-      case 'fut': {
+      case 'fut':
+      case 'football':
+      case 'futebol':
         try {
-          await handleFutCommand(args, { sender, senderName, from, nazu, isGroup, groupAdmins, isOwner, prefix }, reply);
-        } catch (error) {
-          console.error('Erro no comando fut:', error);
-          reply("❌ Erro ao processar comando de futebol.");
+          await handleFut(args.slice(1), {
+            sender,
+            senderName: pushname,
+            from,
+            nazu,
+            mentionedJid: info.message?.extendedTextMessage?.contextInfo?.mentionedJid || []
+          }, reply);
+        } catch (e) {
+          console.error('Erro no comando fut:', e);
+          reply("ocorreu um erro 💔");
         }
         break;
-      }
 
       case 'lembrete':
       case 'lembrar': {
