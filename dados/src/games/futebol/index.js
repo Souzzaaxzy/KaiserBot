@@ -26,7 +26,7 @@ const pendingX1 = new Map();
 
 export async function handleFutCommand(args, messageInfo, reply) {
   const { sender, senderName, from, nazu } = messageInfo;
-  const command = args[0]?.toLowerCase();
+  const command = args[0]?.toLowerCase() || '';
   const subCommand = args[1]?.toLowerCase();
   
   const player = db.getPlayer(sender);
@@ -458,7 +458,9 @@ export async function handleFut(args, messageInfo, reply) {
   const { sender } = messageInfo;
   const player = db.getPlayer(sender);
   
-  if (!player && args[0]?.toLowerCase() !== 'entrar' && args[0]?.toLowerCase() !== 'registrar') {
+  const command = args[0]?.toLowerCase() || '';
+  
+  if (!player && command !== 'entrar' && command !== 'registrar') {
     // Redirecionar para comando de entrada
     return handleFutCommand(['entrar'], messageInfo, reply);
   }

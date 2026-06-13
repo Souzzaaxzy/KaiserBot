@@ -32349,7 +32349,7 @@ ${nivelSorte >= 70 ? '🎉 Hoje é seu dia de sorte!' : nivelSorte >= 40 ? '🤔
       case 'football':
       case 'futebol':
         try {
-          await handleFut(args.slice(1), {
+          await handleFut(args, {
             sender,
             senderName: pushname,
             from,
