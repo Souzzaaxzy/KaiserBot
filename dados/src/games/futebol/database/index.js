@@ -667,16 +667,17 @@ class FootballDB {
     const player = this.players[userId];
     if (!player) return { success: false, error: 'Jogador não encontrado' };
     
-    const energyGain = Math.floor((player.energy?.max || 200) * 0.5);
-    const currentEnergy = player.energy?.current || 0;
     const maxEnergy = player.energy?.max || 200;
-    const actualGain = Math.min(energyGain, maxEnergy - currentEnergy);
+    const currentEnergy = player.energy?.current || 0;
+    
+    // Recupera energia completa (200)
+    const actualGain = maxEnergy - currentEnergy;
     
     if (!player.energy) {
       player.energy = { current: 200, max: 200, lastRest: Date.now() };
     }
     
-    player.energy.current = Math.min(maxEnergy, currentEnergy + actualGain);
+    player.energy.current = maxEnergy;
     player.energy.lastRest = Date.now();
     
     this.save();

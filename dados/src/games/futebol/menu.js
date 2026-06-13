@@ -473,7 +473,7 @@ export function getTrainingMessage(result) {
 
 ⚡ *${result.attribute}:* ${result.newValue} (+${result.gain})
 🎮 *Novo OVR:* ${result.newOVR}
-💰 *Custo:* ${result.cost.toLocaleString()} FC Coins`;
+⚡ *Energia:* ${result.remainingEnergy}/200 (-${result.energySpent})`;
 }
 
 // ═══════════════════════════════════════════════════════════════

@@ -259,7 +259,7 @@ export async function handleFutCommand(args, messageInfo, reply) {
       if (!restResult.success) {
         return reply(`❌ ${restResult.error}`);
       }
-      return reply(`😴 *DESCANSO*\n\n⚡ Energia recuperada: +${restResult.energyGained}\n⚡ Energia atual: ${restResult.currentEnergy}/${restResult.maxEnergy}`);
+      return reply(`😴 *DESCANSO COMPLETO*\n\n⚡ Energia recuperada: +${restResult.energyGained}\n⚡ Energia atual: ${restResult.currentEnergy}/${restResult.maxEnergy} (100%)`);
     
     // ═══════════════════════════════════════════════════════════════
     // CLUBE
