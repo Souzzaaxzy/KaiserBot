@@ -631,6 +631,64 @@ Exemplo: *!fut codigo ELITE2026*
       return reply(redeemText);
     
     // ═══════════════════════════════════════════════════════════════
+    // TORNEIOS
+    // ═══════════════════════════════════════════════════════════════
+    case 'torneio':
+      if (!player) {
+        return reply('❌ Você não está registrado!');
+      }
+      const tourAction = args[1];
+      
+      // Ver torneios disponíveis
+      if (!tourAction || tourAction === 'listar' || tourAction === 'lista') {
+        const activeTournaments = db.listActiveTournaments();
+        if (activeTournaments.length === 0) {
+          return reply('🏆 *TORNEIOS*\n\n📭 Nenhum torneio aberto no momento!');
+        }
+        let tourList = `🏆 *TORNEIOS ABERTOS*\n\n`;
+        activeTournaments.forEach(t => {
+          const emoji = t.type === 'x1' ? '👤' : '⚽';
+          tourList += `${emoji} *${t.name}*\n`;
+          tourList += `   Jogadores: ${t.participants}/${t.maxPlayers}\n`;
+          tourList += `   Entrada: ${t.entryCost} coins\n`;
+          tourList += `   Prêmio: ${t.prize} coins\n`;
+          tourList += `   ID: ${t.id}\n\n`;
+        });
+        tourList += `💡 Use *!fut torneio entrar [ID]* para participar`;
+        return reply(tourList);
+      }
+      
+      // Entrar em torneio
+      if (tourAction === 'entrar' || tourAction === 'entrar') {
+        const tourId = parseInt(args[2]);
+        if (!tourId) {
+          return reply('📌 Use: *!fut torneio entrar [ID]*');
+        }
+        const joinResult = db.joinTournament(tourId, sender);
+        if (!joinResult.success) {
+          return reply(`❌ ${joinResult.error}`);
+        }
+        let joinText = `✅ *INSCRITO COM SUCESSO!*\n\n`;
+        joinText += `${joinResult.message}\n`;
+        if (joinResult.paid > 0) {
+          joinText += `\n💰 Pagado: ${joinResult.paid} FC Coins`;
+        }
+        return reply(joinText);
+      }
+      
+      // Ver torneio específico
+      const tourId2 = parseInt(tourAction);
+      if (tourId2 && db.tournaments[tourId2]) {
+        return reply(db.getTournamentStatus(tourId2));
+      }
+      
+      return reply(`🏆 *TORNEIOS*
+
+📌 *Comandos:*
+• !fut torneio - Ver abertos
+• !fut torneio entrar [ID] - Participar`);
+    
+    // ═══════════════════════════════════════════════════════════════
     // SALDO
     // ═══════════════════════════════════════════════════════════════
     case 'saldo':
@@ -1438,6 +1496,194 @@ Exemplo:
 
 📌 *Desativar código:*
 *!fut admin codigo desativar [CODIGO]*`);
+        }
+        
+        // ═══════════════════════════════════════════════════════════════
+        // TORNEIOS (ADMIN)
+        // ═══════════════════════════════════════════════════════════════
+        case 'torneio':
+        case 'tourney': {
+          const tourAction = args[1];
+          
+          // Criar torneio
+          if (tourAction === 'criar' || tourAction === 'create') {
+            const name = args.slice(2).join(' ').split('|')[0]?.trim();
+            const type = args.join(' ').includes('club') ? 'club' : 'x1';
+            
+            // Parse: nome|tipo|maxPlayers|entry|prize
+            const parts = args.slice(2).join(' ').split('|');
+            const tourName = parts[0]?.trim() || 'Torneio Sem Nome';
+            const tourType = parts[1]?.toLowerCase() === 'club' ? 'club' : 'x1';
+            const maxPlayers = parseInt(parts[2]) || 8;
+            const entryCost = parseInt(parts[3]) || 0;
+            const prize = parseInt(parts[4]) || 0;
+            const trophy = parts[5]?.trim() || null;
+            
+            if (!tourName || tourName.length < 3) {
+              return reply(`📌 *CRIAR TORNEIO*
+
+*!fut admin torneio criar [NOME]|[TIPO]|[MAX]|[ENTRADA]|[PREMIO]|[TROFÉU]*
+
+Exemplo:
+*!fut admin torneio criar Copa Legends|x1|16|1000|10000|Campeão da Copa*
+
+• Nome: Copa Legends
+• Tipo: x1 ou club
+• Max jogadores: 16
+• Entrada: 1000 coins
+• Prêmio: 10000 coins
+• Troféu: Campeão da Copa (opcional)`);
+            }
+            
+            const result = db.createTournament({
+              name: tourName,
+              type: tourType,
+              maxPlayers: maxPlayers,
+              entryCost: entryCost,
+              prize: prize,
+              trophyTitle: trophy,
+              createdBy: sender
+            });
+            
+            if (!result.success) {
+              return reply(`❌ ${result.error}`);
+            }
+            
+            let createText = `🏆 *TORNEIO CRIADO!*\n\n`;
+            createText += `📛 Nome: ${tourName}\n`;
+            createText += `🎯 Tipo: ${tourType === 'x1' ? '👤 X1' : '⚽ Clube'}\n`;
+            createText += `👥 Máximo: ${maxPlayers} jogadores\n`;
+            createText += `💰 Entrada: ${entryCost} FC Coins\n`;
+            createText += `🏆 Prêmio: ${prize} FC Coins\n`;
+            if (trophy) createText += `🏅 Troféu: ${trophy}\n`;
+            createText += `\nID do Torneio: *${result.tournament.id}*`;
+            return reply(createText);
+          }
+          
+          // Iniciar torneio
+          if (tourAction === 'iniciar' || tourAction === 'start') {
+            const tourId = parseInt(args[2]);
+            if (!tourId) {
+              return reply('📌 Use: *!fut admin torneio iniciar [ID]*');
+            }
+            const startResult = db.startTournament(tourId);
+            if (!startResult.success) {
+              return reply(`❌ ${startResult.error}`);
+            }
+            return reply(`⚔️ *TORNEIO INICIADO!*\n\n${startResult.message}\n\nPartidas geradas! Use *!fut admin torneio jogar [ID]* para prosseguir.`);
+          }
+          
+          // Jogar próxima partida
+          if (tourAction === 'jogar' || tourAction === 'play') {
+            const tourId = parseInt(args[2]);
+            if (!tourId) {
+              return reply('📌 Use: *!fut admin torneio jogar [ID]*');
+            }
+            const tournament = db.tournaments[tourId];
+            if (!tournament) {
+              return reply('❌ Torneio não encontrado!');
+            }
+            
+            // Encontrar próxima partida pendente
+            const pendingMatch = tournament.matches.findIndex(m => m.status === 'pending');
+            if (pendingMatch === -1) {
+              if (tournament.status === 'completed') {
+                return reply(`🏆 *TORNEIO FINALIZADO!*\n\nCampeão: ${tournament.winner?.name || 'Ninguém'}\n\n🏅 Troféu: ${tournament.trophyTitle || 'Nenhum'}`);
+              }
+              return reply('❌ Não há partidas pendentes!');
+            }
+            
+            const playResult = db.playTournamentMatch(tourId, pendingMatch);
+            
+            if (playResult.bye) {
+              return reply(`⚠️ *BYE*\n\n${playResult.winner.name} avança automaticamente!`);
+            }
+            
+            let playText = `⚔️ *PARTIDA ${playResult.match.round}ª RODADA*\n\n`;
+            playText += `${playResult.match.player1.name} ${playResult.match.score1} x ${playResult.match.score2} ${playResult.match.player2.name}\n\n`;
+            playText += `🏆 Vencedor: ${playResult.match.winner.name}\n`;
+            playText += `⭐ +${playResult.xpReward} XP`;
+            
+            return reply(playText);
+          }
+          
+          // Ver torneio
+          if (tourAction === 'ver' || tourAction === 'view') {
+            const tourId = parseInt(args[2]);
+            if (!tourId) {
+              return reply('📌 Use: *!fut admin torneio ver [ID]*');
+            }
+            const status = db.getTournamentStatus(tourId);
+            if (!status) {
+              return reply('❌ Torneio não encontrado!');
+            }
+            
+            let fullStatus = status + '\n\n';
+            const tournament = db.tournaments[tourId];
+            
+            if (tournament.status === 'in_progress') {
+              fullStatus += '*PARTICIPANTES:*\n';
+              tournament.participants.filter(p => !p.isBye).forEach(p => {
+                fullStatus += `• ${p.name} (OVR ${p.ovr})\n`;
+              });
+            }
+            
+            return reply(fullStatus);
+          }
+          
+          // Cancelar torneio
+          if (tourAction === 'cancelar' || tourAction === 'cancel') {
+            const tourId = parseInt(args[2]);
+            if (!tourId) {
+              return reply('📌 Use: *!fut admin torneio cancelar [ID]*');
+            }
+            const tournament = db.tournaments[tourId];
+            if (!tournament) {
+              return reply('❌ Torneio não encontrado!');
+            }
+            tournament.status = 'cancelled';
+            db.save();
+            return reply(`❌ Torneio *${tournament.name}* cancelado!`);
+          }
+          
+          // Listar torneios
+          if (tourAction === 'listar' || tourAction === 'list') {
+            const allTournaments = Object.values(db.tournaments);
+            if (allTournaments.length === 0) {
+              return reply('📭 Nenhum torneio criado ainda!');
+            }
+            let listText = `🏆 *TODOS OS TORNEIOS*\n\n`;
+            allTournaments.slice(-10).reverse().forEach(t => {
+              const statusEmoji = t.status === 'registration' ? '📝' : t.status === 'in_progress' ? '⚔️' : t.status === 'completed' ? '🏆' : '❌';
+              listText += `${statusEmoji} #${t.id} ${t.name}\n`;
+              listText += `   Status: ${t.status}\n`;
+            });
+            return reply(listText);
+          }
+          
+          // Help
+          return reply(`🏆 *COMANDOS DE TORNEIO*
+
+📌 *Criar torneio:*
+*!fut admin torneio criar [NOME]|[TIPO]|[MAX]|[ENTRADA]|[PREMIO]|[TROFÉU]*
+
+📌 *Iniciar torneio:*
+*!fut admin torneio iniciar [ID]*
+
+📌 *Jogar partida:*
+*!fut admin torneio jogar [ID]*
+
+📌 *Ver torneio:*
+*!fut admin torneio ver [ID]*
+
+📌 *Cancelar torneio:*
+*!fut admin torneio cancelar [ID]*
+
+📌 *Listar torneios:*
+*!fut admin torneio listar*
+
+💡 Exemplo completo:
+*!fut admin torneio criar Copa Legends|x1|16|1000|10000|Campeão da Copa*`);
         }
         
         case 'help':

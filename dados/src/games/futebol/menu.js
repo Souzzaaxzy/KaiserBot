@@ -59,6 +59,10 @@ Olá, ${playerName}!
 • !fut rx1 - recusar
 • !fut solo [normal/dificil/extremo]
 
+🏆 *TORNEIOS*
+• !fut torneio - Ver abertos
+• !fut torneio entrar [ID]
+
 🏆 *DIVISÕES*
 • !fut divisoes
 • !fut ranking

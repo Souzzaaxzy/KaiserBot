@@ -567,6 +567,353 @@ class FootballDB {
   }
 
   // ═══════════════════════════════════════════════════════════════
+  // SISTEMA DE TORNEIOS
+  // ═══════════════════════════════════════════════════════════════
+
+  // Torneios ativos
+  tournaments = {};
+  tournamentIdCounter = 0;
+
+  // Criar torneio
+  createTournament(options = {}) {
+    const id = ++this.tournamentIdCounter;
+    
+    const tournament = {
+      id: id,
+      name: options.name || 'Torneio Sem Nome',
+      type: options.type || 'x1', // 'x1' ou 'club'
+      maxPlayers: options.maxPlayers || 16,
+      entryCost: options.entryCost || 0,
+      prize: options.prize || 0,
+      prizeDistribution: options.prizeDistribution || { 1: 100 }, // % por posição
+      status: 'registration', // registration, in_progress, completed, cancelled
+      participants: [],
+      matches: [],
+      rounds: 0,
+      winner: null,
+      trophyTitle: options.trophyTitle || null,
+      createdAt: Date.now(),
+      startedAt: null,
+      endedAt: null,
+      createdBy: options.createdBy || 'admin'
+    };
+
+    this.tournaments[id] = tournament;
+    this.save();
+    
+    return { success: true, tournament: tournament };
+  }
+
+  // Inscrever jogador no torneio
+  joinTournament(tournamentId, userId) {
+    const tournament = this.tournaments[tournamentId];
+    const player = this.players[userId];
+    
+    if (!tournament) {
+      return { success: false, error: 'Torneio não encontrado!' };
+    }
+    
+    if (tournament.status !== 'registration') {
+      return { success: false, error: 'Inscrições encerradas!' };
+    }
+    
+    if (tournament.participants.some(p => p.id === userId)) {
+      return { success: false, error: 'Você já está inscrito!' };
+    }
+    
+    if (tournament.participants.length >= tournament.maxPlayers) {
+      return { success: false, error: 'Torneio lotado!' };
+    }
+    
+    if (tournament.entryCost > 0) {
+      if (!player || player.economy.fcCoins < tournament.entryCost) {
+        return { success: false, error: `FC Coins insuficientes! Necessário: ${tournament.entryCost}` };
+      }
+      player.economy.fcCoins -= tournament.entryCost;
+    }
+    
+    tournament.participants.push({
+      id: userId,
+      name: player?.name || 'Desconhecido',
+      ovr: player?.ovr || 70,
+      registeredAt: Date.now()
+    });
+    
+    this.save();
+    
+    return { 
+      success: true, 
+      message: `Inscrito no torneio *${tournament.name}*!`,
+      paid: tournament.entryCost
+    };
+  }
+
+  // Iniciar torneio
+  startTournament(tournamentId) {
+    const tournament = this.tournaments[tournamentId];
+    
+    if (!tournament) {
+      return { success: false, error: 'Torneio não encontrado!' };
+    }
+    
+    if (tournament.status !== 'registration') {
+      return { success: false, error: 'Torneio já foi iniciado!' };
+    }
+    
+    const participants = tournament.participants;
+    if (participants.length < 2) {
+      return { success: false, error: 'Mínimo 2 participantes!' };
+    }
+    
+    // Embaralhar participantes
+    const shuffled = participants.sort(() => Math.random() - 0.5);
+    
+    // Adicionar BYEs se necessário
+    const sizes = [2, 4, 8, 16, 32, 64];
+    const size = sizes.find(s => s >= shuffled.length) || 16;
+    while (shuffled.length < size) {
+      shuffled.push({ id: 'BYE', name: 'BYE', ovr: 0, isBye: true });
+    }
+    
+    tournament.participants = shuffled;
+    tournament.status = 'in_progress';
+    tournament.startedAt = Date.now();
+    
+    // Gerar partidas da primeira rodada
+    this.generateTournamentBracket(tournament);
+    
+    this.save();
+    
+    return { success: true, message: 'Torneio iniciado!', matches: tournament.matches.length };
+  }
+
+  // Gerar chaveamento do torneio
+  generateTournamentBracket(tournament) {
+    const participants = tournament.participants;
+    const matches = [];
+    const rounds = Math.log2(participants.length);
+    
+    tournament.rounds = rounds;
+    
+    // Partidas por rodada
+    const matchesPerRound = participants.length / 2;
+    
+    for (let round = 0; round < rounds; round++) {
+      const matchesInRound = participants.length / Math.pow(2, round + 1);
+      for (let i = 0; i < matchesInRound; i++) {
+        matches.push({
+          round: round + 1,
+          matchNumber: i + 1,
+          player1: null,
+          player2: null,
+          score1: null,
+          score2: null,
+          winner: null,
+          status: round === 0 ? 'pending' : 'waiting',
+          playedAt: null
+        });
+      }
+    }
+    
+    // Distribuir jogadores na primeira rodada
+    let matchIndex = 0;
+    for (let i = 0; i < participants.length; i += 2) {
+      matches[matchIndex].player1 = participants[i];
+      matches[matchIndex].player2 = participants[i + 1];
+      matches[matchIndex].status = 'pending';
+      matchIndex++;
+    }
+    
+    tournament.matches = matches;
+  }
+
+  // Processar uma partida do torneio
+  playTournamentMatch(tournamentId, matchIndex) {
+    const tournament = this.tournaments[tournamentId];
+    if (!tournament || tournament.status !== 'in_progress') {
+      return { success: false, error: 'Torneio não está ativo!' };
+    }
+    
+    const match = tournament.matches[matchIndex];
+    if (!match || match.status !== 'pending') {
+      return { success: false, error: 'Partida não disponível!' };
+    }
+    
+    // Pular BYE
+    if (match.player1?.isBye || match.player2?.isBye) {
+      match.winner = match.player1?.isBye ? match.player2 : match.player1;
+      match.status = 'completed';
+      match.playedAt = Date.now();
+      this.advanceTournamentMatch(tournament, match.round, matchIndex);
+      this.save();
+      return { success: true, bye: true, winner: match.winner };
+    }
+    
+    const p1 = this.players[match.player1.id];
+    const p2 = this.players[match.player2.id];
+    
+    // Calcular chances baseado em OVR + forma
+    const ovr1 = match.player1.ovr || 70;
+    const ovr2 = match.player2.ovr || 70;
+    const form1 = this.getFormInfo(p1).bonus;
+    const form2 = this.getFormInfo(p2).bonus;
+    
+    const ovrDiff = ovr1 - ovr2;
+    const luckFactor = (Math.random() - 0.5) * 10;
+    const p1Chance = 50 + (ovrDiff * 2) + (form1 * 50) - (form2 * 50) + luckFactor;
+    
+    // Gerar placar
+    let score1, score2;
+    
+    if (Math.random() * 100 < p1Chance) {
+      score1 = Math.floor(Math.random() * 3) + 1;
+      score2 = Math.floor(Math.random() * score1);
+    } else {
+      score2 = Math.floor(Math.random() * 3) + 1;
+      score1 = Math.floor(Math.random() * score2);
+    }
+    
+    match.score1 = score1;
+    match.score2 = score2;
+    match.winner = score1 > score2 ? match.player1 : match.player2;
+    match.loser = score1 > score2 ? match.player2 : match.player1;
+    match.status = 'completed';
+    match.playedAt = Date.now();
+    
+    // Avançar vencedor
+    this.advanceTournamentMatch(tournament, match.round, matchIndex);
+    
+    // Atualizar forma
+    this.updatePlayerForm(match.player1.id, score1 > score2 ? 'win' : score1 === score2 ? 'draw' : 'loss');
+    this.updatePlayerForm(match.player2.id, score2 > score1 ? 'win' : score1 === score2 ? 'draw' : 'loss');
+    
+    // XP por vitória no torneio
+    const xpReward = 20;
+    this.addXP(match.winner.id, xpReward);
+    
+    this.save();
+    
+    return { 
+      success: true, 
+      match: match,
+      xpReward: xpReward
+    };
+  }
+
+  // Avançar vencedor para próxima rodada
+  advanceTournamentMatch(tournament, currentRound, matchIndex) {
+    if (currentRound >= tournament.rounds) {
+      // Finais - Tournament Over
+      tournament.status = 'completed';
+      tournament.endedAt = Date.now();
+      tournament.winner = tournament.matches[matchIndex].winner;
+      
+      // Dar prêmio
+      this.awardTournamentPrize(tournament);
+      return;
+    }
+    
+    // Encontrar partida da próxima rodada
+    const nextRound = currentRound + 1;
+    const matchesInNextRound = tournament.matches.filter(m => m.round === nextRound);
+    const positionInRound = matchIndex % matchesInNextRound.length;
+    const nextMatch = matchesInNextRound[positionInRound];
+    
+    // Determinar se é player1 ou player2 na próxima partida
+    const isPlayer1 = Math.floor(matchIndex / (tournament.matches.length / Math.pow(2, currentRound))) % 2 === 0;
+    
+    if (isPlayer1) {
+      nextMatch.player1 = tournament.matches[matchIndex].winner;
+      if (nextMatch.player1 && nextMatch.player2) nextMatch.status = 'pending';
+    } else {
+      nextMatch.player2 = tournament.matches[matchIndex].winner;
+      if (nextMatch.player1 && nextMatch.player2) nextMatch.status = 'pending';
+    }
+  }
+
+  // Premiar campeão
+  awardTournamentPrize(tournament) {
+    if (!tournament.winner) return;
+    
+    const player = this.players[tournament.winner.id];
+    if (!player) return;
+    
+    // Premio em coins
+    if (tournament.prize > 0) {
+      player.economy.fcCoins += tournament.prize;
+      player.economy.totalEarned += tournament.prize;
+    }
+    
+    // XP
+    const xpPrize = 500;
+    this.addXP(tournament.winner.id, xpPrize);
+    
+    // Troféu
+    if (tournament.trophyTitle) {
+      if (!player.unlockedTitles) player.unlockedTitles = ['Novato'];
+      player.unlockedTitles.push(tournament.trophyTitle);
+      player.equippedTitle = tournament.trophyTitle;
+    }
+    
+    // Conquista
+    this.checkAchievements(tournament.winner.id, 'match', player.stats.matches);
+    
+    this.save();
+  }
+
+  // Ver estado do torneio
+  getTournamentStatus(tournamentId) {
+    const tournament = this.tournaments[tournamentId];
+    if (!tournament) return null;
+    
+    const statusLabels = {
+      'registration': '📝 Inscrições Abertas',
+      'in_progress': '⚔️ Em Andamento',
+      'completed': '🏆 Finalizado',
+      'cancelled': '❌ Cancelado'
+    };
+    
+    let text = `🏆 *${tournament.name}*\n\n`;
+    text += `${statusLabels[tournament.status] || tournament.status}\n`;
+    text += `Tipo: ${tournament.type === 'x1' ? '👤 X1 Individual' : '⚽ Clube 5x5'}\n`;
+    text += `Participantes: ${tournament.participants.filter(p => !p.isBye).length}/${tournament.maxPlayers}\n`;
+    
+    if (tournament.status === 'registration') {
+      text += `\n💰 Custo: ${tournament.entryCost} FC Coins\n`;
+      text += `🏆 Prêmio: ${tournament.prize} FC Coins`;
+    }
+    
+    if (tournament.winner) {
+      text += `\n\n🏆 CAMPEÃO: ${tournament.winner.name}`;
+    }
+    
+    return text;
+  }
+
+  // Listar torneios ativos
+  listActiveTournaments() {
+    return Object.values(this.tournaments)
+      .filter(t => t.status === 'registration')
+      .map(t => ({
+        id: t.id,
+        name: t.name,
+        type: t.type,
+        participants: t.participants.filter(p => !p.isBye).length,
+        maxPlayers: t.maxPlayers,
+        entryCost: t.entryCost,
+        prize: t.prize
+      }));
+  }
+
+  // Obter partidas de uma rodada
+  getTournamentRound(tournamentId, round) {
+    const tournament = this.tournaments[tournamentId];
+    if (!tournament) return [];
+    
+    return tournament.matches.filter(m => m.round === round);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   // SISTEMA DE XP E NÍVEIS
   // ═══════════════════════════════════════════════════════════════
 
