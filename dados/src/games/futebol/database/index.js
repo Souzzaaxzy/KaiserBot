@@ -786,6 +786,10 @@ class FootballDB {
     this.updatePlayerForm(match.player1.id, score1 > score2 ? 'win' : score1 === score2 ? 'draw' : 'loss');
     this.updatePlayerForm(match.player2.id, score2 > score1 ? 'win' : score1 === score2 ? 'draw' : 'loss');
     
+    // Atualizar missões semanais do vencedor
+    this.updateWeeklyMission(match.winner.id, 'win');
+    this.updateWeeklyMission(match.winner.id, 'goals');
+
     // XP por vitória no torneio
     const xpReward = 20;
     this.addXP(match.winner.id, xpReward);
@@ -1541,6 +1545,7 @@ class FootballDB {
     this.updateWeeklyMission(userId, 'solo');
     if (result === 'win') {
       this.updateWeeklyMission(userId, 'win');
+      this.updateWeeklyMission(userId, 'goals');
     }
 
     this.save();
@@ -1917,10 +1922,14 @@ class FootballDB {
     // Atualizar missões semanais
     if (score1 > score2) {
       this.updateWeeklyMission(p1.id, 'win');
+      this.updateWeeklyMission(p1.id, 'x1');
       this.updateWeeklyMission(p1.id, 'goals');
+      this.updateWeeklyMission(p1.id, 'mvp');
     } else {
       this.updateWeeklyMission(p2.id, 'win');
+      this.updateWeeklyMission(p2.id, 'x1');
       this.updateWeeklyMission(p2.id, 'goals');
+      this.updateWeeklyMission(p2.id, 'mvp');
     }
     
     // Escolher MVP
@@ -2150,6 +2159,8 @@ class FootballDB {
     player.attributes[attribute] = Math.min(99, player.attributes[attribute] + finalGain);
     
     this.updatePlayerOVR(userId);
+    // Atualizar missao semanal de treino
+    this.updateWeeklyMission(userId, 'train');
     this.save();
     
     return {
