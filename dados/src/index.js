@@ -32334,28 +32334,12 @@ ${nivelSorte >= 70 ? '🎉 Hoje é seu dia de sorte!' : nivelSorte >= 40 ? '🤔
           reply("ocorreu um erro 💔");
         }
         break;
-      case 'fut':
-      case 'football':
-      case 'futebol':
-        try {
-          await handleFut(args, {
-            sender,
-            senderName: pushname,
-            from,
-            nazu,
-            mentionedJid: info.message?.extendedTextMessage?.contextInfo?.mentionedJid || []
-          }, reply);
-        } catch (e) {
-          console.error('Erro no comando fut:', e);
-          reply("ocorreu um erro 💔");
-        }
-        break;
       case 'menufut':
         try {
           const { getMenuFut } = await import('./games/futebol/menu.js');
-          const futGifPath = __dirname + '/../midias/menufut.gif';
-          const futImagePath = __dirname + '/../midias/menufut.jpg';
-          const futVideoPath = __dirname + '/../midias/menufut.mp4';
+          const futGifPath = pathz.join(__dirname, '..', 'midias', 'menufut.gif');
+          const futImagePath = pathz.join(__dirname, '..', 'midias', 'menufut.jpg');
+          const futVideoPath = pathz.join(__dirname, '..', 'midias', 'menufut.mp4');
 
           const useVideo = fs.existsSync(futVideoPath);
           const mediaPath = useVideo ? futVideoPath : (fs.existsSync(futGifPath) ? futGifPath : (fs.existsSync(futImagePath) ? futImagePath : null));
