@@ -33,57 +33,6 @@ export async function handleFutCommand(args, messageInfo, reply) {
   
   const player = db.getPlayer(sender);
   
-  // ═══════════════════════════════════════════════════════════════
-  // MODO FUT (ATIVAR/DESATIVAR POR GRUPO)
-  // ═══════════════════════════════════════════════════════════════
-  if (command === 'modofut' || command === 'modofutbol') {
-    // Verificar se é admin do grupo para alterar
-    let isAdmin = false;
-    try {
-      if (messageInfo.isGroupAdmin) {
-        isAdmin = true;
-      } else if (nazu?.groupMetadata) {
-        const groupMetadata = await nazu.groupMetadata(from);
-        const admins = groupMetadata.participants?.filter(p => p.admin === 'admin' || p.admin === 'superadmin') || [];
-        isAdmin = admins.some(a => a.id === sender);
-      }
-    } catch (e) {
-      console.log('[FUT MODOFUT] Erro ao verificar admin:', e.message);
-    }
-    
-    // Verificar status atual usando o banco de dados
-    const isEnabled = db.getGroupSetting(from);
-    
-    // Se não passou parâmetro, mostra status
-    if (!subCommand) {
-      const status = isEnabled ? '✅ *ATIVADO*' : '❌ *DESATIVADO*';
-      return reply(`⚙️ *MODO FUTEBOL*\n\n${status}\n\n📌 *Para administradores:*\n• Ativar: *!fut modofut on*\n• Desativar: *!fut modofut off*`);
-    }
-    
-    // Verificar se é admin para alterar
-    if (!isAdmin) {
-      return reply('❌ Apenas *admins do grupo* podem alterar esta configuração!');
-    }
-    
-    if (subCommand === 'on' || subCommand === 'ativar' || subCommand === '1' || subCommand === 'true') {
-      db.setGroupFutEnabled(from, true);
-      return reply('✅ *MODO FUTEBOL ATIVADO!*\n\nOs comandos de futebol estão disponíveis neste grupo.');
-    }
-    
-    if (subCommand === 'off' || subCommand === 'desativar' || subCommand === '0' || subCommand === 'false') {
-      db.setGroupFutEnabled(from, false);
-      return reply('❌ *MODO FUTEBOL DESATIVADO!*\n\nOs comandos de futebol foram desabilitados neste grupo.\n\n📌 Para reativar: *!fut modofut on*');
-    }
-    
-    return reply('📌 Use: *!fut modofut [on/off]*');
-  }
-  
-  // Verificar se o modo está desativado para este grupo
-  const futEnabled = db.getGroupSetting(from);
-  if (!futEnabled && command !== 'modofut') {
-    return; // Não responde comandos se o modo está desativado
-  }
-  
   switch (command) {
     // ═══════════════════════════════════════════════════════════════
     // ENTRAR

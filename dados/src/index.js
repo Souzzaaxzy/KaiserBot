@@ -6128,12 +6128,18 @@ if (isCmd && command && !isOwnerOrSub) {
       case 'football':
       case 'futebol':
         try {
+          // Verificar se o modo fut está desativado
+          if (groupData.modofut === false) {
+            return reply('🔒 *Modo Futebol desativado neste grupo.*\n\n📌 Administradores: use *!modofut* para ativar.');
+          }
+          
           await handleFut(args, {
             sender,
             senderName: pushname,
             from,
             nazu,
-            mentionedJid: info.message?.extendedTextMessage?.contextInfo?.mentionedJid || []
+            mentionedJid: info.message?.extendedTextMessage?.contextInfo?.mentionedJid || [],
+            isGroupAdmin: isGroupAdmin
           }, reply);
         } catch (e) {
           console.error('Erro no comando fut:', e);
@@ -29577,6 +29583,22 @@ case 'set-bannerbv':
         } catch (e) {
           console.error('Erro no comando modoparceria:', e);
           await reply("Ocorreu um erro ao alterar o modo de parcerias 💔");
+        }
+        break;
+      case 'modofut':
+      case 'modofutbol':
+        try {
+          if (!isGroup) return reply("Este comando só funciona em grupos.");
+          if (!isGroupAdmin) return reply("Apenas administradores podem usar este comando.");
+          groupData.modofut = groupData.modofut === false ? true : (groupData.modofut === undefined ? false : !groupData.modofut);
+          writeJsonFile(groupFile, groupData);
+          if (isGroup) {
+            optimizer.invalidateGroup(from);
+          }
+          await reply(`⚽ Modo Futebol ${groupData.modofut ? 'ATIVADO' : 'DESATIVADO'} neste grupo.\n\n${groupData.modofut ? '🏆 Agora os membros podem usar todos os comandos de futebol!' : '🔒 Comandos de futebol desativados.'}`);
+        } catch (e) {
+          console.error('Erro no comando modofut:', e);
+          await reply("Ocorreu um erro ao alterar o modo de futebol 💔");
         }
         break;
       case 'antifig':
