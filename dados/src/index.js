@@ -2122,6 +2122,7 @@ async function NazuninhaBotExec(nazu, info, store, messagesCache, rentalExpirati
       };
       // default flags
       groupData.modorpg = typeof groupData.modorpg === 'boolean' ? groupData.modorpg : false;
+      groupData.modofut = typeof groupData.modofut === 'boolean' ? groupData.modofut : true; // Por padrão, fut fica ATIVADO
       groupData.minMessage = groupData.minMessage || null;
       groupData.moderators = groupData.moderators || [];
       groupData.allowedModCommands = groupData.allowedModCommands || [];
