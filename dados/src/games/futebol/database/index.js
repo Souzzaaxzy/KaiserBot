@@ -10,8 +10,8 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Diretório do banco de dados
-const DB_DIR = path.join(__dirname, '../../database/futebol');
+// Diretório do banco de dados - caminho correto
+const DB_DIR = path.join(__dirname, '../../../database/futebol');
 const ensureDir = (dir) => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
@@ -29,7 +29,8 @@ const FILES = {
   GLOBAL_RANKING: path.join(DB_DIR, 'global_ranking.json'),
   SEASONS: path.join(DB_DIR, 'seasons.json'),
   MARKET: path.join(DB_DIR, 'market.json'),
-  CONFIG: path.join(DB_DIR, 'config.json')
+  CONFIG: path.join(DB_DIR, 'config.json'),
+  GROUPS: path.join(DB_DIR, 'groups.json')
 };
 
 // Funções auxiliares para ler/escrever JSON
@@ -127,11 +128,22 @@ class FootballDB {
     this.globalRanking = readJSON(FILES.GLOBAL_RANKING, { players: [], clubs: [] });
     this.seasons = readJSON(FILES.SEASONS, { current: 1, history: [] });
     this.market = readJSON(FILES.MARKET, { proposals: [], negotiations: [] });
+    // Garantir que market tenha as propriedades necessárias
+    if (!this.market) {
+      this.market = { proposals: [], negotiations: [] };
+    }
+    if (!Array.isArray(this.market.proposals)) {
+      this.market.proposals = [];
+    }
+    if (!Array.isArray(this.market.negotiations)) {
+      this.market.negotiations = [];
+    }
     this.config = readJSON(FILES.CONFIG, {
       fcCoinsName: 'FC Coins',
       currentSeason: 1,
       championsActive: false
     });
+    this.groups = readJSON(FILES.GROUPS, {}); // Configurações por grupo
   }
 
   // Salvar todos os dados
@@ -144,6 +156,7 @@ class FootballDB {
     writeJSON(FILES.SEASONS, this.seasons);
     writeJSON(FILES.MARKET, this.market);
     writeJSON(FILES.CONFIG, this.config);
+    writeJSON(FILES.GROUPS, this.groups); // Salvar configurações de grupo
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -151,7 +164,20 @@ class FootballDB {
   // ═══════════════════════════════════════════════════════════════
 
   getPlayer(userId) {
-    return this.players[userId] || null;
+    const player = this.players[userId] || null;
+    // Garantir que o jogador tenha as propriedades necessárias
+    if (player) {
+      if (!player.energy) {
+        player.energy = { current: 200, max: 200, lastRest: Date.now() };
+      }
+      if (typeof player.energy.current === 'undefined') {
+        player.energy.current = player.energy.max || 200;
+      }
+      if (!player.xp) {
+        player.xp = { level: 1, currentXP: 0, evolutionPoints: 0, totalXP: 0 };
+      }
+    }
+    return player;
   }
 
   createPlayer(userId, userName) {
@@ -2483,6 +2509,25 @@ class FootballDB {
 
   getClubRanking(limit = 10) {
     return this.globalRanking.clubs.slice(0, limit);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // CONFIGURAÇÕES POR GRUPO
+  // ═══════════════════════════════════════════════════════════════
+
+  getGroupSetting(groupId) {
+    // Por padrão, o fut está habilitado (true)
+    // Apenas retorna false se explicitamente desativado
+    return this.groups[groupId]?.futEnabled !== false;
+  }
+
+  setGroupFutEnabled(groupId, enabled) {
+    if (!this.groups[groupId]) {
+      this.groups[groupId] = {};
+    }
+    this.groups[groupId].futEnabled = enabled;
+    this.save();
+    return { success: true, enabled };
   }
 }
 

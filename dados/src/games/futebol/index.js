@@ -33,6 +33,57 @@ export async function handleFutCommand(args, messageInfo, reply) {
   
   const player = db.getPlayer(sender);
   
+  // ═══════════════════════════════════════════════════════════════
+  // MODO FUT (ATIVAR/DESATIVAR POR GRUPO)
+  // ═══════════════════════════════════════════════════════════════
+  if (command === 'modofut' || command === 'modofutbol') {
+    // Verificar se é admin do grupo para alterar
+    let isAdmin = false;
+    try {
+      if (messageInfo.isGroupAdmin) {
+        isAdmin = true;
+      } else if (nazu?.groupMetadata) {
+        const groupMetadata = await nazu.groupMetadata(from);
+        const admins = groupMetadata.participants?.filter(p => p.admin === 'admin' || p.admin === 'superadmin') || [];
+        isAdmin = admins.some(a => a.id === sender);
+      }
+    } catch (e) {
+      console.log('[FUT MODOFUT] Erro ao verificar admin:', e.message);
+    }
+    
+    // Verificar status atual usando o banco de dados
+    const isEnabled = db.getGroupSetting(from);
+    
+    // Se não passou parâmetro, mostra status
+    if (!subCommand) {
+      const status = isEnabled ? '✅ *ATIVADO*' : '❌ *DESATIVADO*';
+      return reply(`⚙️ *MODO FUTEBOL*\n\n${status}\n\n📌 *Para administradores:*\n• Ativar: *!fut modofut on*\n• Desativar: *!fut modofut off*`);
+    }
+    
+    // Verificar se é admin para alterar
+    if (!isAdmin) {
+      return reply('❌ Apenas *admins do grupo* podem alterar esta configuração!');
+    }
+    
+    if (subCommand === 'on' || subCommand === 'ativar' || subCommand === '1' || subCommand === 'true') {
+      db.setGroupFutEnabled(from, true);
+      return reply('✅ *MODO FUTEBOL ATIVADO!*\n\nOs comandos de futebol estão disponíveis neste grupo.');
+    }
+    
+    if (subCommand === 'off' || subCommand === 'desativar' || subCommand === '0' || subCommand === 'false') {
+      db.setGroupFutEnabled(from, false);
+      return reply('❌ *MODO FUTEBOL DESATIVADO!*\n\nOs comandos de futebol foram desabilitados neste grupo.\n\n📌 Para reativar: *!fut modofut on*');
+    }
+    
+    return reply('📌 Use: *!fut modofut [on/off]*');
+  }
+  
+  // Verificar se o modo está desativado para este grupo
+  const futEnabled = db.getGroupSetting(from);
+  if (!futEnabled && command !== 'modofut') {
+    return; // Não responde comandos se o modo está desativado
+  }
+  
   switch (command) {
     // ═══════════════════════════════════════════════════════════════
     // ENTRAR
@@ -150,7 +201,7 @@ export async function handleFutCommand(args, messageInfo, reply) {
           '2': 'recuperacao_fisica',
           '3': 'competidor',
           '4': 'veterano',
-          '5': 'líder',
+          '5': 'lider',
           '6': 'finalizador',
           '7': 'maestro',
           '8': 'muralha',
@@ -162,6 +213,25 @@ export async function handleFutCommand(args, messageInfo, reply) {
         const buyResult = db.buySkill(sender, skillToBuy);
         
         if (!buyResult.success) {
+          // Se a habilidade não foi encontrada, mostrar lista de habilidades
+          if (buyResult.error === 'Habilidade não encontrada') {
+            let habList = '📋 *HABILIDADES DISPONÍVEIS*\n\n';
+            const skillList = [
+              '1️⃣ Aprendizado Rápido',
+              '2️⃣ Recuperação Física',
+              '3️⃣ Competidor',
+              '4️⃣ Veterano',
+              '5️⃣ Líder',
+              '6️⃣ Finalizador',
+              '7️⃣ Maestro',
+              '8️⃣ Muralha',
+              '9️⃣ Reflexo Felino',
+              '🔟 Drible Mestre'
+            ];
+            habList += skillList.join('\n');
+            habList += '\n\n📌 Use: *!fut comprar hab [número]*';
+            return reply(habList);
+          }
           return reply(`❌ ${buyResult.error}`);
         }
         
@@ -1029,10 +1099,19 @@ Exemplo: *!fut codigo ELITE2026*
       // Verificar se é admin do grupo
       let isAdmin = false;
       try {
-        const groupMetadata = await nazu.groupMetadata(from);
-        const admins = groupMetadata.participants?.filter(p => p.admin === 'admin' || p.admin === 'superadmin') || [];
-        isAdmin = admins.some(a => a.id === sender);
+        if (!nazu || !nazu.groupMetadata) {
+          console.log('[FUT ADMIN] nazu.groupMetadata não disponível');
+          // Tentar usar o método alternativo se disponível
+          if (messageInfo.isGroupAdmin) {
+            isAdmin = true;
+          }
+        } else {
+          const groupMetadata = await nazu.groupMetadata(from);
+          const admins = groupMetadata.participants?.filter(p => p.admin === 'admin' || p.admin === 'superadmin') || [];
+          isAdmin = admins.some(a => a.id === sender);
+        }
       } catch (e) {
+        console.log('[FUT ADMIN] Erro ao verificar admin:', e.message);
         // Se não conseguir verificar, nega acesso
       }
       
