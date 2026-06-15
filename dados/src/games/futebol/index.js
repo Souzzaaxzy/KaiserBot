@@ -492,7 +492,12 @@ const checkAdmin = async () => {
     }
   };
 
-  switch (command) {
+  const isAdminCommand = command !== 'fut' && command !== 'futebol' && command !== 'football';
+  const effectiveCommand = isAdminCommand ? command : (subCommand || command);
+  switch (effectiveCommand) {
+    // Mapear 'admin' para 'futadmin_show'
+    case 'admin': return processAdminCommand('futadmin_show', args);
+    
     case 'futadmin':
       return processAdminCommand('futadmin_show', args);
 
