@@ -92,11 +92,10 @@ class NameReactions {
     if (!enabled) return null;
     
     const textNorm = normalize(message);
-    const words = textNorm.split(/\s+/);
     
-    for (const word of words) {
-      if (aliasMap[word]) {
-        const name = aliasMap[word];
+    // Verificar se alguma reação está contida em qualquer lugar do texto
+    for (const [alias, name] of Object.entries(aliasMap)) {
+      if (textNorm.includes(alias)) {
         const config = reactions[name];
         if (config && config.enabled !== false) {
           return { emoji: config.emoji, name };
