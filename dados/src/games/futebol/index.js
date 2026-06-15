@@ -58,6 +58,312 @@ export async function handleFutCommand(args, messageInfo, reply) {
     reply(text);
   };
   
+  // ═══════════════════════════════════════════════════════════════
+  // FUNÇÕES ADMIN (definidas antes do switch para evitar hoisting)
+  // ═══════════════════════════════════════════════════════════════
+  
+  // Helper para verificar se é admin
+  const checkAdmin = async () => {
+    if (messageInfo.isGroupAdmin === true) return true;
+    try {
+      if (nazu?.groupMetadata) {
+        const groupMetadata = await nazu.groupMetadata(from);
+        const admins = groupMetadata.participants?.filter(p => p.admin === 'admin' || p.admin === 'superadmin') || [];
+        return admins.some(a => a.id === sender);
+      }
+    } catch (e) {
+      console.log('[FUT ADMIN] Erro ao verificar admin:', e.message);
+    }
+    return false;
+  };
+  
+  // Função para processar comando admin
+  const processAdminCommand = async (action, argsArray) => {
+    const isAdmin = await checkAdmin();
+    if (!isAdmin) {
+      return sendReply('❌ Apenas *admins do grupo* podem usar comandos administrativos!');
+    }
+    
+    switch (action) {
+      case 'futaddcoins':
+      case 'futremcoins':
+      case 'futsetdiv':
+      case 'futsetovr':
+      case 'futsetenergy':
+      case 'futaddxp':
+      case 'futsetlevel':
+      case 'futsetevo':
+      case 'futaddevo':
+      case 'futsettreino':
+      case 'futresetxp':
+      case 'futsetsolo':
+      case 'futresetplayer':
+      case 'futresetall':
+      case 'futclubereset':
+      case 'futresetx1':
+      case 'futaddmvp':
+      case 'futsetrep':
+      case 'futaddrep': {
+        const targetUser = messageInfo.mentionedJid?.[0] || argsArray[2];
+        const amount = parseInt(argsArray[3]);
+        
+        // Addcoins
+        if (action === 'futaddcoins') {
+          if (!targetUser || !amount) return sendReply('📌 Use: *!futaddcoins @user [valor]*');
+          const targetPlayer = db.getPlayer(targetUser);
+          if (!targetPlayer) return sendReply('❌ Jogador não encontrado!');
+          targetPlayer.economy.fcCoins += amount;
+          targetPlayer.economy.totalEarned += amount;
+          db.save();
+          return sendReply(`✅ Adicionados *${amount.toLocaleString()} FC Coins* para @${targetUser.split('@')[0]}!\n\n💰 Novo saldo: ${targetPlayer.economy.fcCoins.toLocaleString()}`);
+        }
+        
+        // Remcoins
+        if (action === 'futremcoins') {
+          if (!targetUser || !amount) return sendReply('📌 Use: *!futremcoins @user [valor]*');
+          const targetPlayer = db.getPlayer(targetUser);
+          if (!targetPlayer) return sendReply('❌ Jogador não encontrado!');
+          targetPlayer.economy.fcCoins = Math.max(0, targetPlayer.economy.fcCoins - amount);
+          db.save();
+          return sendReply(`✅ Removidos *${amount.toLocaleString()} FC Coins* de @${targetUser.split('@')[0]}!\n\n💰 Novo saldo: ${targetPlayer.economy.fcCoins.toLocaleString()}`);
+        }
+        
+        // Setovr
+        if (action === 'futsetovr') {
+          const ovr = parseInt(argsArray[3]);
+          if (!targetUser || !ovr || ovr < 1 || ovr > 99) return sendReply('📌 Use: *!futsetovr @user [1-99]*');
+          const targetPlayer = db.getPlayer(targetUser);
+          if (!targetPlayer) return sendReply('❌ Jogador não encontrado!');
+          targetPlayer.ovr = ovr;
+          db.save();
+          return sendReply(`✅ OVR de @${targetUser.split('@')[0]} alterado para *${ovr}*!`);
+        }
+        
+        // Setenergy
+        if (action === 'futsetenergy') {
+          const energy = parseInt(argsArray[3]);
+          if (!targetUser || energy === undefined || energy < 0 || energy > 200) return sendReply('📌 Use: *!futsetenergy @user [0-200]*');
+          const targetPlayer = db.getPlayer(targetUser);
+          if (!targetPlayer) return sendReply('❌ Jogador não encontrado!');
+          if (!targetPlayer.energy) targetPlayer.energy = { current: energy, max: 200 };
+          else targetPlayer.energy.current = energy;
+          db.save();
+          return sendReply(`✅ Energia de @${targetUser.split('@')[0]} alterada para *${energy}/200*!`);
+        }
+        
+        // Setdiv
+        if (action === 'futsetdiv') {
+          const division = argsArray[3];
+          if (!targetUser || !division) return sendReply('📌 Use: *!futsetdiv @user [divisão]*');
+          const targetPlayer = db.getPlayer(targetUser);
+          if (!targetPlayer) return sendReply('❌ Jogador não encontrado!');
+          const divLower = division.toLowerCase().replace(/[_\s]/g, '_');
+          targetPlayer.division = { id: divLower, name: divLower };
+          db.save();
+          return sendReply(`✅ Divisão de @${targetUser.split('@')[0]} alterada para *${divLower}*!`);
+        }
+        
+        // Addxp
+        if (action === 'futaddxp') {
+          const xp = parseInt(argsArray[3]);
+          if (!targetUser || !xp) return sendReply('📌 Use: *!futaddxp @user [valor]*');
+          const targetPlayer = db.getPlayer(targetUser);
+          if (!targetPlayer) return sendReply('❌ Jogador não encontrado!');
+          const xpResult = db.addXP(targetUser, xp);
+          if (xpResult.leveledUp) {
+            const xpInfo = db.getXPInfo(targetUser);
+            const levelUpMsg = db.generateLevelUpMessage(targetPlayer.name, xpResult.previousLevel, xpResult.newLevel, xpResult.levelUpRewards, xpInfo);
+            sendReply(levelUpMsg);
+          }
+          return sendReply(`✅ Adicionados *${xpResult.xpGained} XP* para @${targetUser.split('@')[0]}!`);
+        }
+        
+        // Setlevel
+        if (action === 'futsetlevel') {
+          const level = parseInt(argsArray[3]);
+          if (!targetUser || !level || level < 1) return sendReply('📌 Use: *!futsetlevel @user [nível]*');
+          const lvlPlayer = db.getPlayer(targetUser);
+          if (!lvlPlayer) return sendReply('❌ Jogador não encontrado!');
+          if (!lvlPlayer.xp) lvlPlayer.xp = { level: 1, currentXP: 0, evolutionPoints: 0, totalXP: 0 };
+          lvlPlayer.xp.level = level;
+          lvlPlayer.xp.currentXP = 0;
+          db.save();
+          return sendReply(`✅ Nível de @${targetUser.split('@')[0]} definido para *${level}*!`);
+        }
+        
+        // Setevo
+        if (action === 'futsetevo') {
+          const evoPoints = parseInt(argsArray[3]);
+          if (!targetUser || evoPoints === undefined || evoPoints < 0) return sendReply('📌 Use: *!futsetevo @user [pontos]*');
+          const evoPlayer = db.getPlayer(targetUser);
+          if (!evoPlayer) return sendReply('❌ Jogador não encontrado!');
+          if (!evoPlayer.xp) evoPlayer.xp = { level: 1, currentXP: 0, evolutionPoints: 0, totalXP: 0 };
+          evoPlayer.xp.evolutionPoints = evoPoints;
+          db.save();
+          return sendReply(`✅ Pontos de Evolução de @${targetUser.split('@')[0]} definidos para *${evoPoints}*!`);
+        }
+        
+        // Addevo
+        if (action === 'futaddevo') {
+          const evoPoints = parseInt(argsArray[3]);
+          if (!targetUser || !evoPoints || evoPoints < 1) return sendReply('📌 Use: *!futaddevo @user [pontos]*');
+          const addEvoPlayer = db.getPlayer(targetUser);
+          if (!addEvoPlayer) return sendReply('❌ Jogador não encontrado!');
+          if (!addEvoPlayer.xp) addEvoPlayer.xp = { level: 1, currentXP: 0, evolutionPoints: 0, totalXP: 0 };
+          addEvoPlayer.xp.evolutionPoints += evoPoints;
+          db.save();
+          return sendReply(`✅ Adicionados *${evoPoints} Pontos de Evolução* para @${targetUser.split('@')[0]}!\n\n💎 Total: ${addEvoPlayer.xp.evolutionPoints}`);
+        }
+        
+        // Settreino
+        if (action === 'futsettreino') {
+          const attr = argsArray[3]?.toLowerCase();
+          const valor = parseInt(argsArray[4]);
+          if (!targetUser || !attr || !valor || valor < 1 || valor > 99) return sendReply('📌 Use: *!futsettreino @user [attr] [1-99]*');
+          const treinoPlayer = db.getPlayer(targetUser);
+          if (!treinoPlayer) return sendReply('❌ Jogador não encontrado!');
+          const validAttrs = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'];
+          if (!validAttrs.includes(attr)) return sendReply('❌ Atributo inválido! Use: pac, sho, pas, dri, def, phy');
+          const oldVal = treinoPlayer.attributes[attr];
+          treinoPlayer.attributes[attr] = valor;
+          treinoPlayer.ovr = db.calculateOVR(treinoPlayer.attributes);
+          db.save();
+          return sendReply(`✅ ${attr.toUpperCase()} de @${targetUser.split('@')[0]}: ${oldVal} → ${valor}\n🎮 Novo OVR: ${treinoPlayer.ovr}`);
+        }
+        
+        // Resetxp
+        if (action === 'futresetxp') {
+          if (!targetUser) return sendReply('📌 Use: *!futresetxp @user*');
+          const resetResult = db.resetPlayerXP(targetUser);
+          if (!resetResult.success) return sendReply(`❌ ${resetResult.error}`);
+          return sendReply(`✅ XP resetado para @${targetUser.split('@')[0]}!\n\nVoltou ao Nível 1.`);
+        }
+        
+        // Setsolo
+        if (action === 'futsetsolo') {
+          if (!targetUser) return sendReply('📌 Use: *!futsetsolo @user reset*');
+          const soloPlayer = db.getPlayer(targetUser);
+          if (!soloPlayer) return sendReply('❌ Jogador não encontrado!');
+          soloPlayer.soloStats = { victories: 0, draws: 0, losses: 0, streak: 0, bestStreak: 0, totalPlayed: 0 };
+          db.save();
+          return sendReply(`✅ Estatísticas Solo de @${targetUser.split('@')[0]} resetadas!`);
+        }
+        
+        // Resetplayer
+        if (action === 'futresetplayer') {
+          if (!targetUser) return sendReply('📌 Use: *!futresetplayer @user*');
+          if (!db.getPlayer(targetUser)) return sendReply('❌ Jogador não encontrado!');
+          delete db.players[targetUser];
+          db.save();
+          return sendReply(`✅ Jogador resetado com sucesso! Ele precisará usar *!fut entrar* novamente.`);
+        }
+        
+        // Resetall
+        if (action === 'futresetall') {
+          const playersCount = Object.keys(db.players).length;
+          Object.keys(db.players).forEach(userId => delete db.players[userId]);
+          db.globalRanking = { players: [], clubs: [] };
+          db.matches = [];
+          db.tournaments = [];
+          db.market = { proposals: [], negotiations: [] };
+          db.save();
+          return sendReply(`⚠️ *ATENÇÃO - RESET COMPLETO*\n\n${playersCount} jogadores resetados!\n\nTodos voltaram ao início.`);
+        }
+        
+        // Clubereset
+        if (action === 'futclubereset') {
+          const clubsCount = Object.keys(db.clubs).length;
+          Object.keys(db.clubs).forEach(clubId => {
+            const club = db.clubs[clubId];
+            club.players.forEach(p => {
+              if (db.players[p.id]) {
+                db.players[p.id].currentClub = null;
+                db.players[p.id].salary = 0;
+              }
+            });
+            delete db.clubs[clubId];
+          });
+          db.save();
+          return sendReply(`✅ *${clubsCount} clubes* foram resetados!\n\nTodos os jogadores estão livres.`);
+        }
+        
+        // Resetx1
+        if (action === 'futresetx1') {
+          db.matches = db.matches.filter(m => m.status !== 'pending');
+          db.save();
+          return sendReply('✅ X1 pendentes foram limpos!');
+        }
+        
+        // Addmvp
+        if (action === 'futaddmvp') {
+          const mvpAmount = parseInt(argsArray[3]) || 1;
+          if (!targetUser) return sendReply('📌 Use: *!futaddmvp @user [qtd]*');
+          const mvpPlayer = db.getPlayer(targetUser);
+          if (!mvpPlayer) return sendReply('❌ Jogador não encontrado!');
+          if (!mvpPlayer.mvpCount) mvpPlayer.mvpCount = 0;
+          mvpPlayer.mvpCount += mvpAmount;
+          db.save();
+          return sendReply(`✅ Adicionados *${mvpAmount} MVP* para @${targetUser.split('@')[0]}!\n\n⭐ Total de MVPs: ${mvpPlayer.mvpCount}`);
+        }
+        
+        // Setrep
+        if (action === 'futsetrep') {
+          const rep = parseInt(argsArray[3]);
+          if (!targetUser || rep === undefined) return sendReply('📌 Use: *!futsetrep @user [valor]*');
+          const repPlayer = db.getPlayer(targetUser);
+          if (!repPlayer) return sendReply('❌ Jogador não encontrado!');
+          repPlayer.reputation = rep;
+          db.save();
+          return sendReply(`✅ Reputação de @${targetUser.split('@')[0]} definida para *${rep}*!`);
+        }
+        
+        // Addrep
+        if (action === 'futaddrep') {
+          const rep = parseInt(argsArray[3]) || 1;
+          if (!targetUser) return sendReply('📌 Use: *!futaddrep @user [valor]*');
+          const addRepPlayer = db.getPlayer(targetUser);
+          if (!addRepPlayer) return sendReply('❌ Jogador não encontrado!');
+          if (!addRepPlayer.reputation) addRepPlayer.reputation = 50;
+          addRepPlayer.reputation += rep;
+          db.save();
+          return sendReply(`✅ Adicionados *${rep} pontos* de reputação para @${targetUser.split('@')[0]}!\n\n📊 Reputação: ${addRepPlayer.reputation}`);
+        }
+        
+        break;
+      }
+      
+      case 'admin':
+      case 'help':
+      case 'ajuda':
+      case undefined: {
+        return sendReply(`⚙️ *COMANDOS ADMINISTRATIVOS*
+
+💰 *!futaddcoins @user [valor]* - Adicionar coins
+💸 *!futremcoins @user [valor]* - Remover coins
+⭐ *!futaddxp @user [valor]* - Adicionar XP
+📊 *!futsetlevel @user [nível]* - Definir nível
+💎 *!futsetevo @user [pts]* - Definir pontos de evolução
+➕ *!futaddevo @user [pts]* - Adicionar pontos de evolução
+🎮 *!futsetovr @user [1-99]* - Definir OVR
+⚡ *!futsetenergy @user [0-200]* - Definir energia
+🏆 *!futsetdiv @user [divisão]* - Definir divisão
+⭐ *!futsetrep @user [valor]* - Definir reputação
+➕ *!futaddrep @user [valor]* - Adicionar reputação
+🎯 *!futsettreino @user [attr] [1-99]* - Definir atributo
+⭐ *!futaddmvp @user [qtd]* - Adicionar MVP
+🎮 *!futsetsolo @user reset* - Resetar stats solo
+🔄 *!futresetxp @user* - Resetar XP
+🗑️ *!futresetplayer @user* - Resetar jogador
+⚠️ *!futresetall* - Resetar TODOS
+⚽ *!futresetx1* - Limpar X1 pendentes
+🏟️ *!futclubereset* - Resetar clubes`);
+      }
+      
+      default:
+        return sendReply(`❌ Comando '${action}' não reconhecido!\n\nUse *!fut admin* para ver todos os comandos.`);
+    }
+  };
+  
   switch (command) {
     // ═══════════════════════════════════════════════════════════════
     // ENTRAR
@@ -1051,336 +1357,6 @@ Exemplo: *!fut codigo ELITE2026*
     case 'rankingclubes':
       db.updateGlobalRanking();
       return sendReply(getClubRankingMessage());
-    
-    // ═══════════════════════════════════════════════════════════════
-    // COMANDOS ADMIN (apenas admins do grupo) - REFORMULADO
-    // ═══════════════════════════════════════════════════════════════
-    
-    // Helper para verificar se é admin
-    const checkAdmin = async () => {
-      if (messageInfo.isGroupAdmin === true) return true;
-      try {
-        if (nazu?.groupMetadata) {
-          const groupMetadata = await nazu.groupMetadata(from);
-          const admins = groupMetadata.participants?.filter(p => p.admin === 'admin' || p.admin === 'superadmin') || [];
-          return admins.some(a => a.id === sender);
-        }
-      } catch (e) {
-        console.log('[FUT ADMIN] Erro ao verificar admin:', e.message);
-      }
-      return false;
-    };
-    
-    // Função para processar comando admin (com alias legado)
-    const processAdminCommand = async (action, argsArray) => {
-      const isAdmin = await checkAdmin();
-      if (!isAdmin) {
-        return sendReply('❌ Apenas *admins do grupo* podem usar comandos administrativos!');
-      }
-      
-      // Mapear comandos antigos para novos
-      const legacyCommands = {
-        'addcoins': 'futaddcoins',
-        'remcoins': 'futremcoins',
-        'setdiv': 'futsetdiv',
-        'setovr': 'futsetovr',
-        'setenergy': 'futsetenergy',
-        'addxp': 'futaddxp',
-        'setlevel': 'futsetlevel',
-        'setevo': 'futsetevo',
-        'addevo': 'futaddevo',
-        'settreino': 'futsettreino',
-        'resetxp': 'futresetxp',
-        'setsolo': 'futsetsolo',
-        'resetplayer': 'futresetplayer',
-        'resetall': 'futresetall',
-        'clubes': 'futclubereset',
-        'x1reset': 'futresetx1',
-        'addmvp': 'futaddmvp',
-        'setrep': 'futsetrep',
-        'addrep': 'futaddrep',
-        'season': 'futseason',
-        'seasonreset': 'futseasonreset',
-        'seasonconfig': 'futseasonconfig'
-      };
-      
-      const newCommand = legacyCommands[action];
-      if (newCommand) {
-        console.log(`[FUT ADMIN] Comando legado usado: !fut admin ${action} -> será migrado para !${newCommand}`);
-      }
-      
-      // Processar baseado na ação
-      switch (action) {
-        case 'addcoins':
-        case 'futaddcoins': {
-          const targetUser = messageInfo.mentionedJid?.[0] || argsArray[2];
-          const amount = parseInt(argsArray[3]);
-          if (!targetUser || !amount) return sendReply('📌 Use: *!futaddcoins @user [valor]*');
-          const targetPlayer = db.getPlayer(targetUser);
-          if (!targetPlayer) return sendReply('❌ Jogador não encontrado!');
-          targetPlayer.economy.fcCoins += amount;
-          targetPlayer.economy.totalEarned += amount;
-          db.save();
-          return sendReply(`✅ Adicionados *${amount.toLocaleString()} FC Coins* para @${targetUser.split('@')[0]}!\n\n💰 Novo saldo: ${targetPlayer.economy.fcCoins.toLocaleString()}`);
-        }
-        
-        case 'remcoins':
-        case 'futremcoins': {
-          const targetUser = messageInfo.mentionedJid?.[0] || argsArray[2];
-          const amount = parseInt(argsArray[3]);
-          if (!targetUser || !amount) return sendReply('📌 Use: *!futremcoins @user [valor]*');
-          const targetPlayer = db.getPlayer(targetUser);
-          if (!targetPlayer) return sendReply('❌ Jogador não encontrado!');
-          targetPlayer.economy.fcCoins = Math.max(0, targetPlayer.economy.fcCoins - amount);
-          db.save();
-          return sendReply(`✅ Removidos *${amount.toLocaleString()} FC Coins* de @${targetUser.split('@')[0]}!\n\n💰 Novo saldo: ${targetPlayer.economy.fcCoins.toLocaleString()}`);
-        }
-        
-        case 'setdiv':
-        case 'futsetdiv': {
-          const targetUser = messageInfo.mentionedJid?.[0] || argsArray[2];
-          const division = argsArray[3];
-          if (!targetUser || !division) return sendReply('📌 Use: *!futsetdiv @user [divisão]*\n\nDivisões: bronze, prata, ouro, elite, lenda, mestre, pro, worldclass, topglobal');
-          const targetPlayer = db.getPlayer(targetUser);
-          if (!targetPlayer) return sendReply('❌ Jogador não encontrado!');
-          const divLower = division.toLowerCase().replace(/[_\s]/g, '_');
-          targetPlayer.division = { id: divLower, name: divLower };
-          db.save();
-          return sendReply(`✅ Divisão de @${targetUser.split('@')[0]} alterada para *${divLower}*!`);
-        }
-        
-        case 'setovr':
-        case 'futsetovr': {
-          const targetUser = messageInfo.mentionedJid?.[0] || argsArray[2];
-          const ovr = parseInt(argsArray[3]);
-          if (!targetUser || !ovr || ovr < 1 || ovr > 99) return sendReply('📌 Use: *!futsetovr @user [1-99]*');
-          const targetPlayer = db.getPlayer(targetUser);
-          if (!targetPlayer) return sendReply('❌ Jogador não encontrado!');
-          targetPlayer.ovr = ovr;
-          db.save();
-          return sendReply(`✅ OVR de @${targetUser.split('@')[0]} alterado para *${ovr}*!`);
-        }
-        
-        case 'setenergy':
-        case 'futsetenergy': {
-          const targetUser = messageInfo.mentionedJid?.[0] || argsArray[2];
-          const energy = parseInt(argsArray[3]);
-          if (!targetUser || energy === undefined || energy < 0 || energy > 200) return sendReply('📌 Use: *!futsetenergy @user [0-200]*');
-          const targetPlayer = db.getPlayer(targetUser);
-          if (!targetPlayer) return sendReply('❌ Jogador não encontrado!');
-          if (!targetPlayer.energy) targetPlayer.energy = { current: energy, max: 200 };
-          else targetPlayer.energy.current = energy;
-          db.save();
-          return sendReply(`✅ Energia de @${targetUser.split('@')[0]} alterada para *${energy}/200*!`);
-        }
-        
-        case 'addxp':
-        case 'futaddxp': {
-          const targetUser = messageInfo.mentionedJid?.[0] || argsArray[2];
-          const xp = parseInt(argsArray[3]);
-          if (!targetUser || !xp) return sendReply('📌 Use: *!futaddxp @user [valor]*');
-          const targetPlayer = db.getPlayer(targetUser);
-          if (!targetPlayer) return sendReply('❌ Jogador não encontrado!');
-          const xpResult = db.addXP(targetUser, xp);
-          if (xpResult.leveledUp) {
-            const xpInfo = db.getXPInfo(targetUser);
-            const levelUpMsg = db.generateLevelUpMessage(targetPlayer.name, xpResult.previousLevel, xpResult.newLevel, xpResult.levelUpRewards, xpInfo);
-            sendReply(levelUpMsg);
-          }
-          return sendReply(`✅ Adicionados *${xpResult.xpGained} XP* para @${targetUser.split('@')[0]}!`);
-        }
-        
-        case 'setlevel':
-        case 'futsetlevel': {
-          const targetUser = messageInfo.mentionedJid?.[0] || argsArray[2];
-          const level = parseInt(argsArray[3]);
-          if (!targetUser || !level || level < 1) return sendReply('📌 Use: *!futsetlevel @user [nível]*');
-          const lvlPlayer = db.getPlayer(targetUser);
-          if (!lvlPlayer) return sendReply('❌ Jogador não encontrado!');
-          if (!lvlPlayer.xp) lvlPlayer.xp = { level: 1, currentXP: 0, evolutionPoints: 0, totalXP: 0 };
-          lvlPlayer.xp.level = level;
-          lvlPlayer.xp.currentXP = 0;
-          db.save();
-          return sendReply(`✅ Nível de @${targetUser.split('@')[0]} definido para *${level}*!`);
-        }
-        
-        case 'setevo':
-        case 'futsetevo': {
-          const targetUser = messageInfo.mentionedJid?.[0] || argsArray[2];
-          const evoPoints = parseInt(argsArray[3]);
-          if (!targetUser || evoPoints === undefined || evoPoints < 0) return sendReply('📌 Use: *!futsetevo @user [pontos]*');
-          const evoPlayer = db.getPlayer(targetUser);
-          if (!evoPlayer) return sendReply('❌ Jogador não encontrado!');
-          if (!evoPlayer.xp) evoPlayer.xp = { level: 1, currentXP: 0, evolutionPoints: 0, totalXP: 0 };
-          evoPlayer.xp.evolutionPoints = evoPoints;
-          db.save();
-          return sendReply(`✅ Pontos de Evolução de @${targetUser.split('@')[0]} definidos para *${evoPoints}*!`);
-        }
-        
-        case 'addevo':
-        case 'futaddevo': {
-          const targetUser = messageInfo.mentionedJid?.[0] || argsArray[2];
-          const evoPoints = parseInt(argsArray[3]);
-          if (!targetUser || !evoPoints || evoPoints < 1) return sendReply('📌 Use: *!futaddevo @user [pontos]*');
-          const addEvoPlayer = db.getPlayer(targetUser);
-          if (!addEvoPlayer) return sendReply('❌ Jogador não encontrado!');
-          if (!addEvoPlayer.xp) addEvoPlayer.xp = { level: 1, currentXP: 0, evolutionPoints: 0, totalXP: 0 };
-          addEvoPlayer.xp.evolutionPoints += evoPoints;
-          db.save();
-          return sendReply(`✅ Adicionados *${evoPoints} Pontos de Evolução* para @${targetUser.split('@')[0]}!\n\n💎 Total: ${addEvoPlayer.xp.evolutionPoints}`);
-        }
-        
-        case 'settreino':
-        case 'futsettreino': {
-          const targetUser = messageInfo.mentionedJid?.[0] || argsArray[2];
-          const attr = argsArray[3]?.toLowerCase();
-          const valor = parseInt(argsArray[4]);
-          if (!targetUser || !attr || !valor || valor < 1 || valor > 99) return sendReply('📌 Use: *!futsettreino @user [attr] [1-99]*\n\nAttrs: pac, sho, pas, dri, def, phy');
-          const treinoPlayer = db.getPlayer(targetUser);
-          if (!treinoPlayer) return sendReply('❌ Jogador não encontrado!');
-          const validAttrs = ['pac', 'sho', 'pas', 'dri', 'def', 'phy'];
-          if (!validAttrs.includes(attr)) return sendReply('❌ Atributo inválido! Use: pac, sho, pas, dri, def, phy');
-          const oldVal = treinoPlayer.attributes[attr];
-          treinoPlayer.attributes[attr] = valor;
-          treinoPlayer.ovr = db.calculateOVR(treinoPlayer.attributes);
-          db.save();
-          return sendReply(`✅ ${attr.toUpperCase()} de @${targetUser.split('@')[0]}: ${oldVal} → ${valor}\n🎮 Novo OVR: ${treinoPlayer.ovr}`);
-        }
-        
-        case 'resetxp':
-        case 'futresetxp': {
-          const targetUser = messageInfo.mentionedJid?.[0] || argsArray[2];
-          if (!targetUser) return sendReply('📌 Use: *!futresetxp @user*');
-          const resetResult = db.resetPlayerXP(targetUser);
-          if (!resetResult.success) return sendReply(`❌ ${resetResult.error}`);
-          return sendReply(`✅ XP resetado para @${targetUser.split('@')[0]}!\n\nVoltou ao Nível 1.`);
-        }
-        
-        case 'setsolo':
-        case 'futsetsolo': {
-          const targetUser = messageInfo.mentionedJid?.[0] || argsArray[2];
-          if (!targetUser) return sendReply('📌 Use: *!futsetsolo @user reset*');
-          const soloPlayer = db.getPlayer(targetUser);
-          if (!soloPlayer) return sendReply('❌ Jogador não encontrado!');
-          soloPlayer.soloStats = { victories: 0, draws: 0, losses: 0, streak: 0, bestStreak: 0, totalPlayed: 0 };
-          db.save();
-          return sendReply(`✅ Estatísticas Solo de @${targetUser.split('@')[0]} resetadas!`);
-        }
-        
-        case 'resetplayer':
-        case 'futresetplayer': {
-          const targetUser = messageInfo.mentionedJid?.[0] || argsArray[2];
-          if (!targetUser) return sendReply('📌 Use: *!futresetplayer @user*');
-          if (!db.getPlayer(targetUser)) return sendReply('❌ Jogador não encontrado!');
-          delete db.players[targetUser];
-          db.save();
-          return sendReply(`✅ Jogador resetado com sucesso! Ele precisará usar *!fut entrar* novamente.`);
-        }
-        
-        case 'resetall':
-        case 'futresetall': {
-          const playersCount = Object.keys(db.players).length;
-          Object.keys(db.players).forEach(userId => delete db.players[userId]);
-          db.globalRanking = { players: [], clubs: [] };
-          db.matches = [];
-          db.tournaments = [];
-          db.market = { proposals: [], negotiations: [] };
-          db.save();
-          return sendReply(`⚠️ *ATENÇÃO - RESET COMPLETO*\n\n${playersCount} jogadores resetados!\n\nTodos voltaram ao início.`);
-        }
-        
-        case 'clubes':
-        case 'futclubereset': {
-          const clubsCount = Object.keys(db.clubs).length;
-          Object.keys(db.clubs).forEach(clubId => {
-            const club = db.clubs[clubId];
-            club.players.forEach(p => {
-              if (db.players[p.id]) {
-                db.players[p.id].currentClub = null;
-                db.players[p.id].salary = 0;
-              }
-            });
-            delete db.clubs[clubId];
-          });
-          db.save();
-          return sendReply(`✅ *${clubsCount} clubes* foram resetados!\n\nTodos os jogadores estão livres.`);
-        }
-        
-        case 'x1reset':
-        case 'futresetx1': {
-          db.matches = db.matches.filter(m => m.status !== 'pending');
-          db.save();
-          return sendReply('✅ X1 pendentes foram limpos!');
-        }
-        
-        case 'addmvp':
-        case 'futaddmvp': {
-          const targetUser = messageInfo.mentionedJid?.[0] || argsArray[2];
-          const amount = parseInt(argsArray[3]) || 1;
-          if (!targetUser) return sendReply('📌 Use: *!futaddmvp @user [qtd]*');
-          const mvpPlayer = db.getPlayer(targetUser);
-          if (!mvpPlayer) return sendReply('❌ Jogador não encontrado!');
-          if (!mvpPlayer.mvpCount) mvpPlayer.mvpCount = 0;
-          mvpPlayer.mvpCount += amount;
-          db.save();
-          return sendReply(`✅ Adicionados *${amount} MVP* para @${targetUser.split('@')[0]}!\n\n⭐ Total de MVPs: ${mvpPlayer.mvpCount}`);
-        }
-        
-        case 'setrep':
-        case 'futsetrep': {
-          const targetUser = messageInfo.mentionedJid?.[0] || argsArray[2];
-          const rep = parseInt(argsArray[3]);
-          if (!targetUser || rep === undefined) return sendReply('📌 Use: *!futsetrep @user [valor]*');
-          const repPlayer = db.getPlayer(targetUser);
-          if (!repPlayer) return sendReply('❌ Jogador não encontrado!');
-          repPlayer.reputation = rep;
-          db.save();
-          return sendReply(`✅ Reputação de @${targetUser.split('@')[0]} definida para *${rep}*!`);
-        }
-        
-        case 'addrep':
-        case 'futaddrep': {
-          const targetUser = messageInfo.mentionedJid?.[0] || argsArray[2];
-          const rep = parseInt(argsArray[3]) || 1;
-          if (!targetUser) return sendReply('📌 Use: *!futaddrep @user [valor]*');
-          const addRepPlayer = db.getPlayer(targetUser);
-          if (!addRepPlayer) return sendReply('❌ Jogador não encontrado!');
-          if (!addRepPlayer.reputation) addRepPlayer.reputation = 50;
-          addRepPlayer.reputation += rep;
-          db.save();
-          return sendReply(`✅ Adicionados *${rep} pontos* de reputação para @${targetUser.split('@')[0]}!\n\n📊 Reputação: ${addRepPlayer.reputation}`);
-        }
-        
-        case 'admin':
-        case 'help':
-        case 'ajuda': {
-          return sendReply(`⚙️ *COMANDOS ADMINISTRATIVOS*
-
-💰 *!futaddcoins @user [valor]* - Adicionar coins
-💸 *!futremcoins @user [valor]* - Remover coins
-⭐ *!futaddxp @user [valor]* - Adicionar XP
-📊 *!futsetlevel @user [nível]* - Definir nível
-💎 *!futsetevo @user [pts]* - Definir pontos de evolução
-➕ *!futaddevo @user [pts]* - Adicionar pontos de evolução
-🎮 *!futsetovr @user [1-99]* - Definir OVR
-⚡ *!futsetenergy @user [0-200]* - Definir energia
-🏆 *!futsetdiv @user [divisão]* - Definir divisão
-⭐ *!futsetrep @user [valor]* - Definir reputação
-➕ *!futaddrep @user [valor]* - Adicionar reputação
-🎯 *!futsettreino @user [attr] [1-99]* - Definir atributo
-⭐ *!futaddmvp @user [qtd]* - Adicionar MVP
-🎮 *!futsetsolo @user reset* - Resetar stats solo
-🔄 *!futresetxp @user* - Resetar XP
-🗑️ *!futresetplayer @user* - Resetar jogador
-⚠️ *!futresetall* - Resetar TODOS
-⚽ *!futresetx1* - Limpar X1 pendentes
-🏟️ *!futclubereset* - Resetar clubes`);
-        }
-        
-        default:
-          return sendReply(`❌ Comando '${action || command}' não reconhecido!\n\nUse *!fut admin* para ver todos os comandos.`);
-      }
-    };
     
     // ═══════════════════════════════════════════════════════════════
     // COMANDOS ADMIN INDEPENDENTES
