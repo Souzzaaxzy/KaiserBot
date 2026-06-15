@@ -6134,6 +6134,23 @@ if (isCmd && command && !isOwnerOrSub) {
             return reply('🔒 *Modo Futebol desativado neste grupo.*\n\n📌 Administradores: use *!modofut* para ativar.');
           }
           
+          // Corrigir args para comandos como !futadmin (sem espaço)
+          let futArgs = args;
+          if (command === 'futadmin' || command === 'futaddcoins' || command === 'futremcoins' || 
+              command === 'futsetovr' || command === 'futsetenergy' || command === 'futsetdiv' ||
+              command === 'futaddmvp' || command === 'futresetplayer' || command === 'futaddxp' ||
+              command === 'futsetlevel' || command === 'futsetevo' || command === 'futaddevo' ||
+              command === 'futresetxp' || command === 'futsettreino' || command === 'futsetrep' ||
+              command === 'futaddrep' || command === 'futseason' || command === 'futseasonreset' ||
+              command === 'futseasonconfig' || command === 'futcodigocriar' || command === 'futcodigomisterioso' ||
+              command === 'futcodigolistar' || command === 'futcodigolog' || command === 'futcodigodesativar' ||
+              command === 'futtorneiocriar' || command === 'futtorneioiniciar' || command === 'futtorneiojogar' ||
+              command === 'futtorneiover' || command === 'futtorneiocancelar' || command === 'futtorneiolistar' ||
+              command === 'futsetsolo' || command === 'futresetx1' || command === 'futclubereset' ||
+              command === 'futresetall') {
+            futArgs = [command];
+          }
+
           // Enviar GIF/menu do fut junto com a resposta
           const futGifPath = __dirname + '/../midias/menufut_v2.mp4';
           const futImagePath = __dirname + '/../midias/menufut.jpg';
