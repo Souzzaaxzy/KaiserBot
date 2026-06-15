@@ -329,6 +329,223 @@ export async function handleFutCommand(args, messageInfo, reply) {
           return sendReply(`✅ Adicionados *${rep} pontos* de reputação para @${targetUser.split('@')[0]}!\n\n📊 Reputação: ${addRepPlayer.reputation}`);
         }
         
+
+
+        // ═══════════════════════════════════════════════════════════════
+        // TEMPORADA
+        // ═══════════════════════════════════════════════════════════════
+        if (action === 'futseason') {
+          const season = db.seasonConfig;
+          const current = db.seasons;
+          return sendReply(`🏆 *TEMPORADA ATUAL*
+
+📅 Número: ${season.number}
+📆 Início: ${new Date(season.startDate).toLocaleDateString('pt-BR')}
+⏰ Duração: ${season.durationDays} dias
+📊 Resetar divisões: ${season.resetDivisions ? 'Sim' : 'Não'}
+
+💡 Use *!futseasonreset* para resetar a temporada`);
+        }
+        
+        if (action === 'futseasonreset') {
+          const oldSeason = db.seasonConfig.number;
+          db.resetSeason();
+          return sendReply(`✅ *TEMPORADA RESETADA*
+
+🏆 Temporada ${oldSeason} encerrada!
+
+🏆 Nova temporada ${db.seasonConfig.number} começou!`);
+        }
+        
+        if (action === 'futseasonconfig') {
+          const days = parseInt(argsArray[2]) || seasonConfig.durationDays;
+          const resetDiv = argsArray[3]?.toLowerCase() === 'sim' || argsArray[3]?.toLowerCase() === 'true';
+          db.seasonConfig.durationDays = days;
+          db.seasonConfig.resetDivisions = resetDiv;
+          db.save();
+          return sendReply(`✅ *CONFIGURAÇÃO DA TEMPORADA*
+
+📅 Duração: ${days} dias
+📊 Resetar divisões: ${resetDiv ? 'Sim' : 'Não'}`);
+        }
+        
+        // ═══════════════════════════════════════════════════════════════
+        // CÓDIGOS PROMOCIONAIS
+        // ═══════════════════════════════════════════════════════════════
+        if (action === 'futcodigocriar') {
+          const codeType = argsArray[2]?.toLowerCase();
+          const codeCoins = parseInt(argsArray[3]) || 0;
+          const codeXP = parseInt(argsArray[4]) || 0;
+          const codeName = argsArray[5] || '';
+          
+          if (!codeType) {
+            return sendReply(`📌 *CRIAR CÓDIGO*
+
+Use: *!futcodigocriar [tipo] [coins] [xp] [nome]*
+
+Tipos: normal, especial, titulo
+
+Ex: *!futcodigocriar normal 1000 100 Elite*`);
+          }
+          
+          const code = db.createPromoCode({
+            type: codeType === 'titulo' ? 'title' : codeType,
+            rewards: { coins: codeCoins, xp: codeXP },
+            title: codeName
+          });
+          
+          return sendReply(`🎁 *CÓDIGO CRIADO!*
+
+📝 Código: *${code}*
+💰 Coins: ${codeCoins}
+⭐ XP: ${codeXP}
+🏅 Título: ${codeName || 'Nenhum'}`);
+        }
+        
+        if (action === 'futcodigomisterioso') {
+          const minCoins = parseInt(argsArray[2]) || 100;
+          const maxCoins = parseInt(argsArray[3]) || 5000;
+          const minXP = parseInt(argsArray[4]) || 10;
+          const maxXP = parseInt(argsArray[5]) || 500;
+          
+          const code = db.createPromoCode({
+            type: 'mysterious',
+            rewards: { coins: [minCoins, maxCoins], xp: [minXP, maxXP] }
+          });
+          
+          return sendReply(`🎲 *CÓDIGO MISTERIOSO CRIADO!*
+
+📝 Código: *${code}*
+💰 Coins: ${minCoins}-${maxCoins}
+⭐ XP: ${minXP}-${maxXP}`);
+        }
+        
+        if (action === 'futcodigolistar') {
+          const allCodes = db.listPromoCodes();
+          if (allCodes.length === 0) {
+            return sendReply('📭 Nenhum código promocional cadastrado!');
+          }
+          let text = `🎁 *CÓDIGOS PROMOCIONAIS*
+
+`;
+          allCodes.slice(0, 10).forEach(c => {
+            text += `📝 ${c.code} - ${c.usedBy?.length || 0} usos
+`;
+          });
+          return sendReply(text);
+        }
+        
+        if (action === 'futcodigolog') {
+          const codeId = argsArray[2];
+          if (!codeId) return sendReply('📌 Use: *!futcodigolog [código]*');
+          const codeData = db.promoCodes[codeId];
+          if (!codeData) return sendReply('❌ Código não encontrado!');
+          const users = codeData.usedBy || [];
+          let logText = `📋 *LOG DO CÓDIGO ${codeId}*
+
+Usos: ${users.length}
+`;
+          users.slice(0, 5).forEach(u => {
+            const p = db.getPlayer(u);
+            logText += `• ${p?.name || u}
+`;
+          });
+          return sendReply(logText);
+        }
+        
+        if (action === 'futcodigodesativar') {
+          const codeId = argsArray[2];
+          if (!codeId) return sendReply('📌 Use: *!futcodigodesativar [código]*');
+          if (!db.promoCodes[codeId]) return sendReply('❌ Código não encontrado!');
+          delete db.promoCodes[codeId];
+          db.save();
+          return sendReply(`✅ Código *${codeId}* desativado!`);
+        }
+        
+        // ═══════════════════════════════════════════════════════════════
+        // TORNEIOS
+        // ═══════════════════════════════════════════════════════════════
+        if (action === 'futtorneiocriar') {
+          const tourName = argsArray[2];
+          const tourType = argsArray[3] || 'x1';
+          const tourMax = parseInt(argsArray[4]) || 8;
+          const tourEntry = parseInt(argsArray[5]) || 100;
+          const tourPrize = parseInt(argsArray[6]) || 500;
+          
+          if (!tourName) {
+            return sendReply(`📌 *CRIAR TORNEIO*
+
+Use: *!futtorneiocriar [nome] [tipo] [max] [entrada] [premio]*
+
+Ex: *!futtorneiocriar Copa Elite x1 16 500 5000*`);
+          }
+          
+          const tour = db.createTournament({
+            name: tourName,
+            type: tourType,
+            maxPlayers: tourMax,
+            entryCost: tourEntry,
+            prize: tourPrize
+          });
+          
+          return sendReply(`🏆 *TORNEIO CRIADO!*
+
+📝 Nome: ${tour.name}
+👥 Máximo: ${tour.maxPlayers}
+💰 Entrada: ${tour.entryCost}
+🏅 Prêmio: ${tour.prize}
+
+💡 Use *!futtorneioiniciar ${tour.id}* para começar`);
+        }
+        
+        if (action === 'futtorneioiniciar') {
+          const tourId = parseInt(argsArray[2]);
+          if (!tourId) return sendReply('📌 Use: *!futtorneioiniciar [ID]*');
+          const tour = db.tournaments[tourId];
+          if (!tour) return sendReply('❌ Torneio não encontrado!');
+          if (tour.status !== 'open') return sendReply('❌ Torneio já iniciado!');
+          tour.status = 'active';
+          db.save();
+          return sendReply(`✅ Torneio *${tour.name}* iniciado!
+
+🏆 Status: Em andamento`);
+        }
+        
+        if (action === 'futtorneiover') {
+          const tourId = parseInt(argsArray[2]);
+          if (!tourId) return sendReply('📌 Use: *!futtorneiover [ID]*');
+          return sendReply(db.getTournamentStatus(tourId));
+        }
+        
+        if (action === 'futtorneiocancelar') {
+          const tourId = parseInt(argsArray[2]);
+          if (!tourId) return sendReply('📌 Use: *!futtorneiocancelar [ID]*');
+          const tour = db.tournaments[tourId];
+          if (!tour) return sendReply('❌ Torneio não encontrado!');
+          delete db.tournaments[tourId];
+          db.save();
+          return sendReply(`✅ Torneio cancelado!`);
+        }
+        
+        if (action === 'futtorneiolistar') {
+          const activeTours = db.listActiveTournaments();
+          if (activeTours.length === 0) {
+            return sendReply('📭 Nenhum torneio ativo!');
+          }
+          let text = `🏆 *TORNEIOS ATIVOS*
+
+`;
+          activeTours.forEach(t => {
+            text += `📝 ${t.name} (ID: ${t.id})
+`;
+            text += `   Status: ${t.status}
+   Jogadores: ${t.participants?.length || 0}/${t.maxPlayers}
+
+`;
+          });
+          return sendReply(text);
+        }
+
         break;
       }
       
@@ -1383,7 +1600,23 @@ Exemplo: *!fut codigo ELITE2026*
     case 'futaddmvp':
     case 'futsetrep':
     case 'futaddrep':
-      return processAdminCommand('admin', args);
+    // Season commands
+    case 'futseason':
+    case 'futseasonreset':
+    case 'futseasonconfig':
+    // Promo code commands
+    case 'futcodigocriar':
+    case 'futcodigomisterioso':
+    case 'futcodigolistar':
+    case 'futcodigolog':
+    case 'futcodigodesativar':
+    // Tournament commands
+    case 'futtorneiocriar':
+    case 'futtorneioiniciar':
+    case 'futtorneiover':
+    case 'futtorneiocancelar':
+    case 'futtorneiolistar':
+      return processAdminCommand(command, args);
     
     // ═══════════════════════════════════════════════════════════════
     // COMANDO INVÁLIDO
