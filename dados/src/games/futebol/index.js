@@ -5,7 +5,8 @@
 import db from './database/index.js';
 import { 
   getMenuFut,
-  getMenuAdminFut, 
+  getMenuAdminFut,
+  getAdminMenuFut, 
   getEnterMessage, 
   getProfileMessage, 
   getStatsMessage,
@@ -553,27 +554,16 @@ Ex: *!futtorneiocriar Copa Elite x1 16 500 5000*`);
       case 'help':
       case 'ajuda':
       case undefined: {
-        return sendReply(`⚙️ *COMANDOS ADMINISTRATIVOS*
+        // Verificar se é admin
+        const isAdmin = await checkAdmin();
+        if (!isAdmin) {
+          return sendReply(`🚫 *ACESSO NEGADO*
 
-💰 *!futaddcoins @user [valor]* - Adicionar coins
-💸 *!futremcoins @user [valor]* - Remover coins
-⭐ *!futaddxp @user [valor]* - Adicionar XP
-📊 *!futsetlevel @user [nível]* - Definir nível
-💎 *!futsetevo @user [pts]* - Definir pontos de evolução
-➕ *!futaddevo @user [pts]* - Adicionar pontos de evolução
-🎮 *!futsetovr @user [1-99]* - Definir OVR
-⚡ *!futsetenergy @user [0-200]* - Definir energia
-🏆 *!futsetdiv @user [divisão]* - Definir divisão
-⭐ *!futsetrep @user [valor]* - Definir reputação
-➕ *!futaddrep @user [valor]* - Adicionar reputação
-🎯 *!futsettreino @user [attr] [1-99]* - Definir atributo
-⭐ *!futaddmvp @user [qtd]* - Adicionar MVP
-🎮 *!futsetsolo @user reset* - Resetar stats solo
-🔄 *!futresetxp @user* - Resetar XP
-🗑️ *!futresetplayer @user* - Resetar jogador
-⚠️ *!futresetall* - Resetar TODOS
-⚽ *!futresetx1* - Limpar X1 pendentes
-🏟️ *!futclubereset* - Resetar clubes`);
+Este painel é exclusivo para administradores do Futebol Global.
+
+📌 Apenas administradores do grupo podem acessar.`);
+        }
+        return sendReply(getAdminMenuFut(senderName));
       }
       
       default:

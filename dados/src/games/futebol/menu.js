@@ -999,3 +999,252 @@ function generateProgressBar(current, max, size = 20) {
 }
 
 export { getDivisionName, getSkillSlots, DIVISIONS_EMOJI, ATTR_NAMES };
+// ═══════════════════════════════════════════════════════════════
+// 📋 MENU ADMINISTRATIVO DO FUTEBOL GLOBAL
+// ═══════════════════════════════════════════════════════════════
+
+export function getAdminMenuFut(senderName) {
+  return `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚽ *FUTEBOL GLOBAL - PAINEL ADMIN* ⚽
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👤 Administrador: ${senderName}
+🔒 Acesso: *AUTORIZADO*
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💰 MOEDAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• *!futaddcoins* - Adicionar coins
+• *!futremcoins* - Remover coins
+
+📖 Como usar:
+• *!futaddcoins @usuario 5000*
+  └ Adiciona 5.000 FC Coins
+
+• *!futremcoins @usuario 5000*
+  └ Remove 5.000 FC Coins
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+👤 JOGADORES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• *!futsetovr* - Definir overall
+• *!futsetenergy* - Definir energia
+• *!futsetdiv* - Definir divisão
+• *!futaddmvp* - Adicionar MVP
+• *!futresetplayer* - Resetar jogador
+
+📖 Como usar:
+• *!futsetovr @usuario 85*
+  └ Define OVR do jogador (1-99)
+
+• *!futsetenergy @usuario 200*
+  └ Define energia maxima (0-200)
+
+• *!futsetdiv @usuario ouro_1*
+  └ Define a divisão do jogador
+
+• *!futaddmvp @usuario 10*
+  └ Adiciona MVPs ao jogador
+
+• *!futresetplayer @usuario*
+  └ Reseta jogador completamente
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⭐ XP E EVOLUÇÃO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• *!futaddxp* - Adicionar XP
+• *!futsetlevel* - Definir nível
+• *!futsetevo* - Definir pontos evo
+• *!futaddevo* - Adicionar pontos evo
+• *!futresetxp* - Resetar XP
+
+📖 Como usar:
+• *!futaddxp @usuario 5000*
+  └ Adiciona XP ao jogador
+
+• *!futsetlevel @usuario 50*
+  └ Define nível direto
+
+• *!futsetevo @usuario 200*
+  └ Define pontos de evolução
+
+• *!futaddevo @usuario 50*
+  └ Adiciona pontos de evolução
+
+• *!futresetxp @usuario*
+  └ Reseta XP para nível 1
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎯 ATRIBUTOS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• *!futsettreino* - Definir atributo
+
+📖 Como usar:
+• *!futsettreino @usuario pac 99*
+
+⚡ Atributos disponíveis:
+• pac - Velocidade
+• sho - Finalização
+• pas - Passe
+• dri - Drible
+• def - Defesa
+• phy - Físico
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🌟 REPUTAÇÃO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• *!futsetrep* - Definir reputação
+• *!futaddrep* - Adicionar reputação
+
+📖 Como usar:
+• *!futsetrep @usuario 90*
+  └ Define reputação fixa (0-100)
+
+• *!futaddrep @usuario 10*
+  └ Adiciona pontos de reputação
+
+💡 Reputação afeta negociações e
+   aceitação em clubes
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🏆 TEMPORADAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• *!futseason* - Ver temporada atual
+• *!futseasonreset* - Resetar temporada
+• *!futseasonconfig* - Configurar temporada
+
+📖 Como usar:
+• *!futseason*
+  └ Mostra informações da temporada
+
+• *!futseasonreset*
+  └ Reseta rankings e divisões
+
+• *!futseasonconfig 30 sim*
+  └ Configura: 30 dias, reseta divisões
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎁 CÓDIGOS PROMOCIONAIS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• *!futcodigocriar* - Criar código
+• *!futcodigomisterioso* - Criar código aleatório
+• *!futcodigolistar* - Listar códigos
+• *!futcodigolog* - Ver log de uso
+• *!futcodigodesativar* - Desativar código
+
+📖 Como usar:
+• *!futcodigocriar normal 1000 100*
+  └ Cria código: 1000 coins, 100 XP
+
+• *!futcodigocriar titulo 500 50 Lendario*
+  └ Cria código com título
+
+• *!futcodigomisterioso 100 5000*
+  └ Código com recompensas aleatórias
+
+• *!futcodigolistar*
+  └ Lista todos os códigos
+
+• *!futcodigolog CODIGO123*
+  └ Ver quem usou o código
+
+• *!futcodigodesativar CODIGO123*
+  └ Desativa o código
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🏆 TORNEIOS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• *!futtorneiocriar* - Criar torneio
+• *!futtorneioiniciar* - Iniciar torneio
+• *!futtorneiover* - Ver torneio
+• *!futtorneiocancelar* - Cancelar torneio
+• *!futtorneiolistar* - Listar torneios
+
+📖 Fluxo completo:
+1️⃣ *!futtorneiocriar Copa Elite x1 16 500 5000*
+   └ Nome: Copa Elite | Tipo: X1 | Max: 16
+   └ Entrada: 500 | Prêmio: 5000
+
+2️⃣ *!futtorneiolistar*
+   └ Ver ID do torneio criado
+
+3️⃣ *!futtorneioiniciar 1*
+   └ Inicia o torneio (ID 1)
+
+4️⃣ *!futtorneiover 1*
+   └ Acompanhar andamento
+
+5️⃣ *!futtorneiocancelar 1*
+   └ Cancelar se necessário
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 FUT SOLO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• *!futsetsolo* - Resetar stats solo
+
+📖 Como usar:
+• *!futsetsolo @usuario reset*
+
+⚡ Stats resetadas:
+• Vitórias, empates, derrotas
+• Sequência atual e melhor
+• Total de partidas
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚔️ X1
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• *!futresetx1* - Limpar X1 pendentes
+
+📖 Como usar:
+• *!futresetx1*
+
+⚡ Cancela todos os desafios X1
+   que estão aguardando resposta
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🏟️ CLUBES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• *!futclubereset* - Resetar clubes
+
+📖 Como usar:
+• *!futclubereset*
+
+⚡ Remove todos os clubes e
+   desvincula jogadores
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+☠️ ⚠️⚠️ RESET GLOBAL ⚠️⚠️ ☠️
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• *!futresetall* - RESETAR TUDO
+
+📖 Como usar:
+• *!futresetall*
+
+⚠️⚠️⚠️ *PERIGO EXTREMO* ⚠️⚠️⚠️
+
+Este comando IRÁ APAGAR:
+• Todos os jogadores
+• Todos os clubes
+• Todos os rankings
+• Todos os torneios
+• Todas as transações
+• Todas as estatísticas
+
+⚠️ Esta ação NÃO pode ser desfeita!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📚 USE *!futadmin* PARA VER ESTE MENU
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+}
