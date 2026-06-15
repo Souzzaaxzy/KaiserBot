@@ -1051,6 +1051,9 @@ class FootballDB {
       player.xp = { level: 1, currentXP: 0, evolutionPoints: 0, totalXP: 0 };
     }
     
+    // Salvar nível anterior para comparação
+    const previousLevel = player.xp.level;
+    
     // Aplicar todos os bônus
     const finalAmount = options.noBonus 
       ? amount 
@@ -1077,59 +1080,224 @@ class FootballDB {
       player.xp.currentXP -= xpNeeded;
       player.xp.level++;
       
-      // Dar pontos de evolução (2 por nível)
-      const evoPoints = 2;
-      player.xp.evolutionPoints += evoPoints;
-      
       levelsGained.push({
-        level: player.xp.level,
-        evoPoints: evoPoints
+        level: player.xp.level
       });
-
-      // Verificar marcos de nível
-      this.checkLevelMilestone(player, player.xp.level);
     }
 
+    // Se subiu de nível, processar recompensas completas
     if (levelsGained.length > 0) {
+      const newLevel = player.xp.level;
+      
+      // Processar todas as recompensas dos níveis ganhos
+      const levelUpRewards = this.processLevelUp(player, previousLevel, newLevel);
+      
       result.leveledUp = true;
       result.levelsGained = levelsGained;
+      result.newLevel = newLevel;
+      result.previousLevel = previousLevel;
+      result.levelUpRewards = levelUpRewards;
       result.totalEvolutionPoints = player.xp.evolutionPoints;
+      result.coinsEarned = levelUpRewards.coins;
+      result.ticketsEarned = levelUpRewards.tickets;
+      result.packsEarned = levelUpRewards.packs;
+      result.energyEarned = levelUpRewards.energy;
+      result.newTitles = levelUpRewards.titles;
     }
 
     this.save();
     return result;
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // SISTEMA COMPLETO DE RECOMPENSAS DE NÍVEL
+  // ═══════════════════════════════════════════════════════════════
+  
+  // Configuração completa de recompensas por nível
+  getLevelRewards(level) {
+    const rewards = {
+      // Recompensas base (a cada nível)
+      base: {
+        evolutionPoints: 2,  // Sempre ganha 2 pontos de evolução
+        energy: 5            // Sempre ganha 5 de energia
+      },
+      
+      // Marcos de nível com recompensas extras
+      milestones: {
+        5:  { coins: 500,  energy: 10,  ticket: 0, pack: 0, title: 'Novato', message: '🌱 Nível 5! Primeiro passo!' },
+        10: { coins: 1000, energy: 15,  ticket: 1, pack: 0, title: 'Iniciante', message: '🏆 Nível 10! +1.000 FC Coins + 1 Ticket!' },
+        15: { coins: 1500, energy: 20,  ticket: 0, pack: 0, title: 'Jogador', message: '⭐ Nível 15! +1.500 FC Coins!' },
+        20: { coins: 2000, energy: 25,  ticket: 1, pack: 1, title: 'Promissor', message: '🎯 Nível 20! +2.000 FC Coins + Pack!' },
+        25: { coins: 2500, energy: 30,  ticket: 2, pack: 0, title: 'Talentoso', message: '⭐ Nível 25! +2.500 FC Coins + 2 Tickets!' },
+        30: { coins: 3500, energy: 35,  ticket: 0, pack: 1, title: 'Destaque', message: '🔥 Nível 30! +3.500 FC Coins + Pack!' },
+        35: { coins: 4000, energy: 40,  ticket: 1, pack: 0, title: 'Revelação', message: '⚡ Nível 35! +4.000 FC Coins!' },
+        40: { coins: 4500, energy: 45,  ticket: 2, pack: 2, title: 'Promessa', message: '⚡ Nível 40! +4.500 FC Coins + 2 Packs!' },
+        45: { coins: 5000, energy: 50,  ticket: 0, pack: 0, title: 'Estrela', message: '🌟 Nível 45! +5.000 FC Coins!' },
+        50: { coins: 5000, energy: 50,  ticket: 3, pack: 3, title: ' Craque', message: '👑 NÍVEL 50! +5.000 FC Coins + 3 Tickets + 3 Packs!' },
+        55: { coins: 6000, energy: 55,  ticket: 0, pack: 1, title: 'Ídolo', message: '💎 Nível 55! +6.000 FC Coins!' },
+        60: { coins: 7500, energy: 60,  ticket: 2, pack: 2, title: 'Lenda', message: '💎 NÍVEL 60! +7.500 FC Coins + 2 Packs!' },
+        65: { coins: 8000, energy: 65,  ticket: 0, pack: 0, title: 'Mito', message: '⭐ Nível 65! +8.000 FC Coins!' },
+        70: { coins: 10000, energy: 70, ticket: 3, pack: 2, title: 'Lenda Viva', message: '🌟 NÍVEL 70! +10.000 FC Coins!' },
+        75: { coins: 12500, energy: 75, ticket: 0, pack: 3, title: 'Lenda Absoluta', message: '🌟 NÍVEL 75! +12.500 FC Coins + Pack!' },
+        80: { coins: 15000, energy: 80, ticket: 4, pack: 2, title: 'Mito Vivo', message: '💫 NÍVEL 80! +15.000 FC Coins + 4 Tickets!' },
+        85: { coins: 17500, energy: 85, ticket: 0, pack: 0, title: 'Deus do Futebol', message: '⚡ Nível 85! +17.500 FC Coins!' },
+        90: { coins: 20000, energy: 90, ticket: 5, pack: 3, title: 'Lenda Eterna', message: '⚡ NÍVEL 90! +20.000 FC Coins!' },
+        95: { coins: 22500, energy: 95, ticket: 0, pack: 2, title: 'Lenda Global', message: '🏆 Nível 95! +22.500 FC Coins!' },
+        100: { coins: 25000, energy: 100, ticket: 10, pack: 5, title: ' Lenda das Lendas', message: '💎🌟 NÍVEL 100! +25.000 FC Coins + 10 Tickets + 5 Packs! LENDÁRIO!' },
+        125: { coins: 35000, energy: 125, ticket: 5, pack: 3, title: 'Mítico', message: '🔥 NÍVEL 125! +35.000 FC Coins!' },
+        150: { coins: 50000, energy: 150, ticket: 10, pack: 5, title: 'Lenda Mitológica', message: '👑🌟 NÍVEL 150! +50.000 FC Coins! ÉPICO!' },
+        175: { coins: 75000, energy: 175, ticket: 8, pack: 4, title: 'Lenda Celestial', message: '⭐ NÍVEL 175! +75.000 FC Coins!' },
+        200: { coins: 100000, energy: 200, ticket: 15, pack: 8, title: 'Lenda Divina', message: '⭐🔥 NÍVEL 200! +100.000 FC Coins! ÉPICO!' },
+        250: { coins: 150000, energy: 250, ticket: 20, pack: 10, title: 'Lenda Cósmica', message: '🌟👑 NÍVEL 250! +150.000 FC Coins! LENDÁRIO!' },
+        300: { coins: 200000, energy: 300, ticket: 25, pack: 15, title: 'Lenda Universal', message: '💎⭐ NÍVEL 300! +200.000 FC Coins! MITOLÓGICO!' },
+        350: { coins: 250000, energy: 350, ticket: 30, pack: 18, title: 'Lenda Transcendental', message: '🌟 NÍVEL 350! +250.000 FC Coins!' },
+        400: { coins: 300000, energy: 400, ticket: 35, pack: 20, title: 'Lenda Ancestral', message: '⚡ NÍVEL 400! +300.000 FC Coins!' },
+        500: { coins: 500000, energy: 500, ticket: 50, pack: 30, title: ' Lenda Absoluta', message: '🏆🌟💎 NÍVEL 500! +500.000 FC Coins + 50 Tickets + 30 Packs! LENDA ABSOLUTA!' }
+      }
+    };
+    
+    const result = { ...rewards.base };
+    
+    // Verificar marcos de nível
+    const milestone = rewards.milestones[level];
+    if (milestone) {
+      Object.assign(result, milestone);
+    }
+    
+    return result;
+  }
+  
+  // Processar level up e entregar recompensas
+  processLevelUp(player, previousLevel, newLevel) {
+    const totalRewards = {
+      evolutionPoints: 0,
+      coins: 0,
+      energy: 0,
+      tickets: 0,
+      packs: 0,
+      titles: [],
+      messages: []
+    };
+    
+    // Processar cada nível subido
+    for (let level = previousLevel + 1; level <= newLevel; level++) {
+      const rewards = this.getLevelRewards(level);
+      
+      totalRewards.evolutionPoints += rewards.evolutionPoints;
+      totalRewards.coins += rewards.coins || 0;
+      totalRewards.energy += rewards.energy || 0;
+      totalRewards.tickets += rewards.ticket || 0;
+      totalRewards.packs += rewards.pack || 0;
+      
+      if (rewards.title) {
+        totalRewards.titles.push(rewards.title);
+      }
+      if (rewards.message) {
+        totalRewards.messages.push(rewards.message);
+      }
+    }
+    
+    // Aplicar recompensas ao jogador
+    player.xp.evolutionPoints += totalRewards.evolutionPoints;
+    player.economy.fcCoins += totalRewards.coins;
+    player.economy.totalEarned += totalRewards.coins;
+    
+    // Energia
+    if (!player.energy) {
+      player.energy = { current: 0, max: 100 };
+    }
+    player.energy.current = Math.min(player.energy.current + totalRewards.energy, player.energy.max || 100);
+    
+    // Tickets
+    if (!player.tickets) player.tickets = 0;
+    player.tickets += totalRewards.tickets;
+    
+    // Packs
+    if (!player.packs) player.packs = 0;
+    player.packs += totalRewards.packs;
+    
+    // Títulos
+    if (!player.unlockedTitles) player.unlockedTitles = [];
+    if (!player.equippedTitle) player.equippedTitle = 'Novato';
+    totalRewards.titles.forEach(title => {
+      if (!player.unlockedTitles.includes(title)) {
+        player.unlockedTitles.push(title);
+      }
+    });
+    
+    return totalRewards;
+  }
+  
+  // Gerar mensagem de level up
+  generateLevelUpMessage(playerName, previousLevel, newLevel, rewards, xpInfo) {
+    let message = `
+╔══════════════════════════════════════╗
+║     🏆 *LEVEL UP!* 🏆                  ║
+╚══════════════════════════════════════╝
+
+⚽ *Jogador:* ${playerName}
+
+📈 *Nível:* ${previousLevel} ➜ ${newLevel}
+${rewards.messages.length > 0 ? rewards.messages.map(m => `🎉 ${m}`).join('\n') : ''}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚡ *XP*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✨ XP Atual: ${xpInfo.currentXP.toLocaleString()}/${xpInfo.xpNeeded.toLocaleString()}
+📊 Progresso: ${xpInfo.progress}%
+📈 Próximo nível: ${xpInfo.xpRemaining.toLocaleString()} XP`;
+
+    // Recompensas
+    message += `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎁 *RECOMPENSAS* 🏆
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+
+    const rewardLines = [];
+    
+    if (rewards.evolutionPoints > 0) {
+      rewardLines.push(`💎 +${rewards.evolutionPoints} Pontos de Evolução`);
+    }
+    if (rewards.coins > 0) {
+      rewardLines.push(`💰 +${rewards.coins.toLocaleString()} FC Coins`);
+    }
+    if (rewards.energy > 0) {
+      rewardLines.push(`⚡ +${rewards.energy} Energia`);
+    }
+    if (rewards.tickets > 0) {
+      rewardLines.push(`🎟️ +${rewards.tickets} Ticket${rewards.tickets > 1 ? 's' : ''}`);
+    }
+    if (rewards.packs > 0) {
+      rewardLines.push(`📦 +${rewards.packs} Pack${rewards.packs > 1 ? 's' : ''}`);
+    }
+    if (rewards.titles.length > 0) {
+      rewardLines.push(`🏅 Novo Título: *${rewards.titles.join(', ')}*`);
+    }
+    
+    if (rewardLines.length === 0) {
+      message += `\n✨ Subiu de nível! Continue assim!`;
+    } else {
+      message += '\n' + rewardLines.map(r => `• ${r}`).join('\n');
+    }
+    
+    message += `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚀 *Continue jogando!* 🚀
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💡 Use *!fut evoluir* para usar seus pontos!
+💡 Use *!fut diario* para ganhar recompensas!
+
+⚡ *Bônus Ativo:* +${xpInfo.xpBonus}% XP
+🔥 *Sequência:* ${xpInfo.winStreak} vitórias`;
+
+    return message;
+  }
+
   // Verificar marcos de nível e dar recompensas
   checkLevelMilestone(player, level) {
-    const milestones = {
-      5: { coins: 500, message: '🌱 Nível 5! +500 FC Coins' },
-      10: { coins: 1000, message: '🏆 Nível 10! +1.000 FC Coins' },
-      15: { coins: 1500, message: '⭐ Nível 15! +1.500 FC Coins' },
-      20: { coins: 2000, message: '🎯 Nível 20! +2.000 FC Coins' },
-      25: { coins: 2500, message: '⭐ Nível 25! +2.500 FC Coins' },
-      30: { coins: 3500, message: '🔥 Nível 30! +3.500 FC Coins' },
-      40: { coins: 4500, message: '⚡ Nível 40! +4.500 FC Coins' },
-      50: { coins: 5000, message: '👑 Nível 50! +5.000 FC Coins' },
-      60: { coins: 7500, message: '💎 Nível 60! +7.500 FC Coins' },
-      70: { coins: 10000, message: '🌟 Nível 70! +10.000 FC Coins' },
-      75: { coins: 12500, message: '🌟 Nível 75! +12.500 FC Coins' },
-      80: { coins: 15000, message: '💫 Nível 80! +15.000 FC Coins' },
-      90: { coins: 20000, message: '⚡ Nível 90! +20.000 FC Coins' },
-      100: { coins: 25000, message: '💎 Nível 100! +25.000 FC Coins - LENDÁRIO!' },
-      125: { coins: 35000, message: '🔥 Nível 125! +35.000 FC Coins' },
-      150: { coins: 50000, message: '👑 Nível 150! +50.000 FC Coins' },
-      200: { coins: 75000, message: '⭐ Nível 200! +75.000 FC Coins - ÉPICO!' },
-      250: { coins: 100000, message: '🌟 Nível 250! +100.000 FC Coins - LENDÁRIO!' },
-      300: { coins: 150000, message: '💎 Nível 300! +150.000 FC Coins - MITOLÓGICO!' },
-      500: { coins: 300000, message: '🏆 Nível 500! +300.000 FC Coins - LENDA ABSOLUTA!' }
-    };
-
-    if (milestones[level]) {
-      player.economy.fcCoins += milestones[level].coins;
-      player.economy.totalEarned += milestones[level].coins;
-      player.milestoneReward = milestones[level].message;
-    }
+    // Agora processado em processLevelUp
   }
 
   // Usar pontos de evolução

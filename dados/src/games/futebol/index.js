@@ -325,11 +325,17 @@ export async function handleFutCommand(args, messageInfo, reply) {
       }
       
       if (soloResult.leveledUp) {
-        soloText += `\n\n🎉 *SUBIU DE NÍVEL!*`;
-        soloResult.newLevel.forEach(lvl => {
-          soloText += `\n📊 Nível ${lvl.level} (+${lvl.evoPoints} Pontos de Evolução)`;
-        });
-        soloText += `\n💡 Use *!fut evoluir [atributo] [pontos]* para melhorar!`;
+        const xpInfo = db.getXPInfo(sender);
+        const levelUpMsg = db.generateLevelUpMessage(
+          senderName,
+          soloResult.newLevel[0].level - soloResult.levelsGained.length,
+          soloResult.newLevel[soloResult.newLevel.length - 1].level,
+          soloResult.levelUpRewards,
+          xpInfo
+        );
+        // Enviar mensagem especial de level up primeiro
+        sendReply(levelUpMsg);
+        // Não retorna aqui para continuar mostrando o resultado da partida
       }
       
       return sendReply(soloText);
@@ -1173,9 +1179,20 @@ Exemplo: *!fut codigo ELITE2026*
           }
           const xpResult = db.addXP(targetUser, xp);
           let msg = `✅ Adicionados *${xpResult.xpGained} XP* para @${targetUser.split('@')[0]}!`;
+          
+          // Mostrar mensagem completa de level up se subiu
           if (xpResult.leveledUp) {
-            msg += `\n🎉 Subiu para Nível ${xpResult.levelsGained[0].level}!`;
+            const xpInfo = db.getXPInfo(targetUser);
+            const levelUpMsg = db.generateLevelUpMessage(
+              targetPlayer.name,
+              xpResult.previousLevel,
+              xpResult.newLevel,
+              xpResult.levelUpRewards,
+              xpInfo
+            );
+            sendReply(levelUpMsg);
           }
+          
           return sendReply(msg);
         }
         
