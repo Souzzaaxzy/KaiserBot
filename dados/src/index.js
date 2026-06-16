@@ -30466,15 +30466,44 @@ case 'assistent':
         try {
           if (!isGroup) return sendKaiserWarning("Este comando só pode ser usado em grupos.");
 
-          const canalAtual = groupData.canal || 'Nenhum';
-          reply(`📢 *Canal do Grupo*\n\nCanal configurado: ${canalAtual}\n\n⚙️ *Gerenciar canal:*\n• ${prefixo}setcanal <JID> - Definir canal\n• ${prefixo}delcanal - Remover canal`);
+          const canalAtual = groupData.canal;
+
+          if (!canalAtual) {
+            return reply(`ℹ️ *Canal do Grupo*
+
+Nenhum canal configurado neste grupo.
+
+⚙️ *Configurar canal:*
+${prefixo}setcanal <JID>
+
+Exemplo:
+${prefixo}setcanal 185208267632774@lid`);
+          }
+
+          // Envia preview do botão "Ver Canal"
+          const previewMessage = {
+            text: `📢 *Canal Configurado*
+
+Canal: ${canalAtual}
+
+👆 *Preview do botão "Ver Canal" que aparece na mensagem de boas-vindas:*`,
+            contextInfo: {
+              newsletterJid: canalAtual,
+              newsletterServerJid: canalAtual,
+              newsletterName: 'Canal'
+            }
+          };
+
+          await nazu.sendMessage(from, previewMessage, { quoted: info });
+
+          reply(`⚙️ *Gerenciar canal:*
+• ${prefixo}setcanal <JID> - Alterar canal
+• ${prefixo}delcanal - Remover canal`);
         } catch (e) {
           console.error(e);
           await reply("❌ Ocorreu um erro interno. Tente novamente em alguns minutos.");
         }
         break;
-      case 'mute':
-      case 'mutar':
         try {
           if (!isGroup) return sendKaiserWarning("Este comando só pode ser usado em grupos.");
           if (!isGroupAdmin) return reply("Você precisa ser administrador para usar este comando. 💔");
