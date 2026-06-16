@@ -533,9 +533,6 @@ async function createGroupMessage(KaiserSock, groupMetadata, participants, setti
     delete message.text;
   }
 
-  return message;
-}
-
   // Adicionar contextInfo com newsletterJid para botão "Ver Canal" nativo
   const canalJid = settings?.canal;
   if (canalJid && isWelcome) {
